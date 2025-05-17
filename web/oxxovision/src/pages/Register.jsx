@@ -36,7 +36,7 @@ const Register = () => {
       const userData = {
         nombre: name,
         email: email,
-        rol: 'usuario',
+        rol: 'admin',
         fechaRegistro: new Date()
       };
       

@@ -127,6 +127,10 @@ const Dashboard = () => {
     navigate('/productos');
   };
 
+  const navigateToImageAnalyzer = () => {
+    navigate('/image-analyzer');
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -173,21 +177,7 @@ const Dashboard = () => {
         <div className="dashboard-content">
           <div className="welcome-section">
             <h2>Bienvenido/a, {userName}</h2>
-            <p>Sistema de Gestión de Planogramas para tiendas OXXO.</p>
-            
-            {canManageStores && (
-              <div className="main-action-buttons">
-                <button className="main-action-button" onClick={navigateToRegistroTienda}>
-                  <span className="material-icons">add_business</span>
-                  Registrar Nueva Tienda
-                </button>
-                <button className="main-action-button search-button" onClick={navigateToBusquedaTienda}>
-                  <span className="material-icons">search</span>
-                  Buscar Tienda
-                </button>
-              </div>
-            )}
-          </div>
+                          <p>Sistema de Gestión de Planogramas para tiendas OXXO.</p>                            {canManageStores && (                <div className="main-action-buttons">                  <button className="main-action-button" onClick={navigateToRegistroTienda}>                    <span className="material-icons">add_business</span>                    Registrar Nueva Tienda                  </button>                  <button className="main-action-button search-button" onClick={navigateToBusquedaTienda}>                    <span className="material-icons">search</span>                    Buscar Tienda                  </button>                  <button className="main-action-button analyzer-button" onClick={navigateToImageAnalyzer}>                    <span className="material-icons">image_search</span>                    Analizador de Imágenes                  </button>                </div>              )}            </div>
           
           {/* Sección de Mis Tiendas */}
           <MisTiendas />

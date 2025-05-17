@@ -9,6 +9,7 @@ import TiendaInfo from './pages/TiendaInfo';
 import CrearPlanograma from './pages/CrearPlanograma';
 import ProductosPage from './pages/ProductosPage';
 import EditarProducto from './pages/EditarProducto';
+import ImageAnalyzerPage from './pages/ImageAnalyzerPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -98,6 +99,15 @@ function App() {
           element={
             <ProtectedRoute>
               <TiendaInfo />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para el analizador de imágenes */}
+        <Route 
+          path="/image-analyzer" 
+          element={
+            <ProtectedRoute>
+              <ImageAnalyzerPage />
             </ProtectedRoute>
           } 
         />
