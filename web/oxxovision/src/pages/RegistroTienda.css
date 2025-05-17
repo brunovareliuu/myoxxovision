@@ -1,0 +1,322 @@
+/* Estilos para el registro de tiendas OXXO */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f8f8;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed + .main-content {
+  margin-left: 70px;
+}
+
+.content-header {
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 18px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.content-header h1 {
+  color: #e5231b;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-button {
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-button:hover {
+  background-color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.back-button .material-icons {
+  font-size: 18px;
+}
+
+.registro-tienda-content {
+  padding: 30px;
+  max-width: 900px;
+  margin: 30px auto;
+}
+
+.form-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 30px;
+}
+
+/* Estilos para la previsualización del código */
+.codigo-tienda-preview {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  height: fit-content;
+  border: 1px solid #eee;
+}
+
+.codigo-tienda-preview h3 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.codigo-display {
+  background-color: white;
+  border: 2px dashed #e5231b;
+  border-radius: 8px;
+  padding: 15px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #e5231b;
+  margin: 15px 0;
+  letter-spacing: 2px;
+}
+
+.codigo-info {
+  color: #666;
+  font-size: 13px;
+  margin-top: 15px;
+  line-height: 1.5;
+}
+
+.user-info {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed #ddd;
+  text-align: left;
+}
+
+.user-info p {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+/* Estilos para el formulario */
+.registro-tienda-form-container {
+  padding: 0;
+}
+
+.registro-tienda-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.form-group label::after {
+  content: " *";
+  color: #e5231b;
+}
+
+.form-group label:not([for="nombre"]):not([for="estado"]):not([for="ciudad"]):not([for="direccion"])::after {
+  content: "";
+}
+
+.form-group input,
+.form-group select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s;
+  background-color: #f9f9f9;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #e5231b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(229, 35, 27, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.submit-button {
+  background-color: #e5231b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-button::after {
+  content: 'store';
+  font-family: 'Material Icons';
+  font-size: 18px;
+}
+
+.submit-button:hover {
+  background-color: #c71a14;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(229, 35, 27, 0.3);
+}
+
+.submit-button:disabled {
+  background-color: #f5a29e;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Mensajes de error y éxito */
+.error-message {
+  color: #e5231b;
+  background-color: rgba(229, 35, 27, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-message {
+  color: #2ecc71;
+  background-color: rgba(46, 204, 113, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-message p {
+  margin: 5px 0;
+}
+
+.success-message strong {
+  font-size: 18px;
+  color: #e5231b;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8f8f8;
+}
+
+/* Estilos para información de depuración */
+.debug-panel {
+  margin-top: 30px;
+  padding: 15px;
+  background-color: #333;
+  color: #00ff00;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.debug-info {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .form-container {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .registro-tienda-content {
+    padding: 15px;
+  }
+}
+
+.store-assignment {
+  margin-top: 10px;
+  font-style: italic;
+  font-size: 13px;
+  color: #555;
+  background-color: rgba(46, 204, 113, 0.1);
+  padding: 8px;
+  border-radius: 6px;
+  border-left: 3px solid #2ecc71;
+} 

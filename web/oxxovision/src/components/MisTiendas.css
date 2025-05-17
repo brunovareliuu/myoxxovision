@@ -1,0 +1,259 @@
+.mis-tiendas-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 25px;
+  margin-bottom: 30px;
+  border-left: 4px solid #333;
+}
+
+.mis-tiendas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.mis-tiendas-header h3 {
+  color: #333;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mis-tiendas-header h3::before {
+  content: 'store';
+  font-family: 'Material Icons';
+  font-size: 22px;
+  color: #e5231b;
+}
+
+.action-button {
+  background-color: #e5231b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-button.small {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.action-button .material-icons {
+  font-size: 18px;
+}
+
+.action-button:hover {
+  background-color: #c71a14;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(229, 35, 27, 0.3);
+}
+
+.tiendas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.tienda-card {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  transition: all 0.3s;
+  cursor: pointer;
+  position: relative;
+  border-top: 3px solid #e5231b;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tienda-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.tienda-status {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tienda-status[data-status="activo"] .material-icons {
+  color: #2ecc71;
+  font-size: 20px;
+}
+
+.tienda-status[data-status="inactivo"] .material-icons {
+  color: #e74c3c;
+  font-size: 20px;
+}
+
+.tienda-nombre {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+  padding-right: 25px;
+}
+
+.tienda-codigo {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e5231b;
+  background-color: rgba(229, 35, 27, 0.1);
+  padding: 5px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.tienda-direccion {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tienda-direccion .material-icons {
+  color: #e5231b;
+  font-size: 18px;
+}
+
+.tienda-direccion p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.tienda-direccion-completa {
+  margin-top: 5px;
+}
+
+.tienda-direccion-completa p {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+  line-height: 1.4;
+}
+
+.ver-detalle-btn {
+  margin-top: 15px;
+  background-color: transparent;
+  color: #e5231b;
+  border: 1px solid #e5231b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ver-detalle-btn .material-icons {
+  font-size: 16px;
+}
+
+.ver-detalle-btn:hover {
+  background-color: #e5231b;
+  color: white;
+}
+
+.empty-message {
+  padding: 30px;
+  text-align: center;
+}
+
+.empty-message .material-icons {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 15px;
+}
+
+.empty-message h3 {
+  font-size: 18px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.empty-message p {
+  font-size: 14px;
+  color: #777;
+  margin-bottom: 20px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mis-tiendas-container.loading,
+.mis-tiendas-container.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.error-message {
+  color: #e5231b;
+  font-size: 14px;
+}
+
+.mis-tiendas-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.tiendas-count {
+  background-color: #f5f5f5;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.mis-tiendas-container.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  gap: 15px;
+}
+
+.mis-tiendas-container.error .action-button {
+  margin-top: 10px;
+}
+
+/* Media queries para responsividad */
+@media (max-width: 768px) {
+  .tiendas-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .mis-tiendas-container {
+    padding: 15px;
+  }
+} 

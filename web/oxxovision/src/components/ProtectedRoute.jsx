@@ -7,8 +7,26 @@ const ProtectedRoute = ({ children }) => {
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Check localStorage first for session persistence
+    const sessionToken = localStorage.getItem('oxxoSessionToken');
+    
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      setAuthenticated(!!user);
+      if (user) {
+        // User is signed in, store token in localStorage
+        localStorage.setItem('oxxoSessionToken', 'true');
+        localStorage.setItem('oxxoUserId', user.uid);
+        setAuthenticated(true);
+      } else if (sessionToken) {
+        // If we have a token but Firebase doesn't recognize user,
+        // try to keep the session alive instead of immediate logout
+        setAuthenticated(true);
+        // Optionally attempt to refresh the Firebase auth silently here
+      } else {
+        // No user and no session token
+        localStorage.removeItem('oxxoSessionToken');
+        localStorage.removeItem('oxxoUserId');
+        setAuthenticated(false);
+      }
       setLoading(false);
     });
 
