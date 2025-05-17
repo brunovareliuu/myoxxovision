@@ -1,0 +1,32 @@
+{
+  "signupAllowed": true,
+  "emails": {
+    "passwordResetEmailEnabled": true,
+    "emailVerificationEnabled": true
+  },
+  "multiFactorAuthEnabled": false,
+  "providers": {
+    "email": {
+      "enabled": true,
+      "passwordRequired": true
+    },
+    "phone": {
+      "enabled": false
+    },
+    "google.com": {
+      "enabled": false
+    },
+    "facebook.com": {
+      "enabled": false
+    },
+    "twitter.com": {
+      "enabled": false
+    },
+    "github.com": {
+      "enabled": false
+    },
+    "microsoft.com": {
+      "enabled": false
+    }
+  }
+} 
