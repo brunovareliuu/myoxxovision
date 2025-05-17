@@ -4,7 +4,7 @@ import {
   OrbitControls, 
   Sky, 
   Environment, 
-  Text, 
+  Text,
   Html,
   PerspectiveCamera,
   useTexture
@@ -88,7 +88,7 @@ const Wall = ({ position = [0, 0, 0], size = [1, 1, 1], rotation = [0, 0, 0], co
 };
 
 // Shelf component with labels and interactivity
-const Shelf = ({ position = [0, 0, 0], size = [1, 1, 1], rotation = [0, 0, 0], color = "#cccccc", id, name, products = [], isSelected, onClick }) => {
+const Shelf = ({ position = [0, 0, 0], size = [1, 1, 1], rotation = [0, 0, 0], color = "#cccccc", id, name, products = [], shelves = [], maxProductsPerShelf = 5, isSelected, onClick }) => {
   const meshRef = useRef();
   const [hovered, setHovered] = useState(false);
   
@@ -100,15 +100,15 @@ const Shelf = ({ position = [0, 0, 0], size = [1, 1, 1], rotation = [0, 0, 0], c
   // Highlight color when hovered or selected
   const shelfColor = isSelected ? '#4285f4' : (hovered ? '#90caf9' : color);
   
-  // Adding simple animation for selected shelves
-  useFrame(() => {
-    if (isSelected && meshRef.current) {
-      meshRef.current.rotation.y += 0.005;
-    }
-  });
+  // No animation for selected shelves - prevent unwanted rotation
+  
+  // Compute shelf positions based on configuration
+  const shelfCount = shelves ? shelves.length : 1;
+  const shelfHeight = safeSize[1] / shelfCount;
   
   return (
     <group position={safePosition} rotation={safeRotation}>
+      {/* Main shelf structure */}
       <mesh
         ref={meshRef}
         castShadow
@@ -128,16 +128,61 @@ const Shelf = ({ position = [0, 0, 0], size = [1, 1, 1], rotation = [0, 0, 0], c
         />
       </mesh>
       
-      {/* Shelf label */}
-      <Text
-        position={[0, safeSize[1]/2 + 0.2, 0]}
-        fontSize={0.2}
-        color="black"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {name || "Sin nombre"}
-      </Text>
+      {/* Shelf label - replace text with a simple square/block when hovering */}
+      {(hovered || isSelected) && (
+        <mesh position={[0, safeSize[1]/2 + 0.1, 0]} castShadow>
+          <boxGeometry args={[0.2, 0.2, 0.2]} />
+          <meshStandardMaterial color={isSelected ? "#4285f4" : "#90caf9"} />
+        </mesh>
+      )}
+      
+      {/* Display shelf levels */}
+      {shelves && shelves.length > 0 && shelves.map((shelfLevel, levelIndex) => {
+        // Position for this shelf level
+        const levelY = -safeSize[1]/2 + (levelIndex + 0.5) * shelfHeight;
+        return (
+          <group key={`shelf-level-${levelIndex}`} position={[0, levelY, 0]}>
+            {/* Shelf divider (except for bottom shelf) */}
+            {levelIndex > 0 && (
+              <mesh position={[0, shelfHeight/2, 0]}>
+                <boxGeometry args={[safeSize[0], 0.05, safeSize[2]]} />
+                <meshStandardMaterial color="#8b7355" />
+              </mesh>
+            )}
+            
+            {/* Products on this shelf level */}
+            {shelfLevel && shelfLevel.length > 0 && shelfLevel.map((product, productIndex) => {
+              // Calculate product position within the shelf
+              const totalProducts = shelfLevel.length;
+              const productWidth = safeSize[0] / Math.max(totalProducts, maxProductsPerShelf);
+              const startX = -safeSize[0]/2 + productWidth/2;
+              const productX = startX + productIndex * productWidth;
+              const productY = 0; // centered at shelf level
+              const productZ = safeSize[2]/4; // position at front half of shelf
+              
+              return (
+                <mesh 
+                  key={`product-${levelIndex}-${productIndex}`}
+                  position={[productX, productY, productZ]}
+                  castShadow
+                >
+                  <boxGeometry args={[productWidth * 0.8, shelfHeight * 0.7, safeSize[2] * 0.4]} />
+                  <meshStandardMaterial color={product.color || "#ff9800"} />
+                  
+                  {/* Product label - only show on hover or when shelf selected */}
+                  {(isSelected || hovered) && (
+                    <Html position={[0, shelfHeight * 0.4, 0]} center distanceFactor={10}>
+                      <div className="product-tag">
+                        {product.name}
+                      </div>
+                    </Html>
+                  )}
+                </mesh>
+              );
+            })}
+          </group>
+        );
+      })}
       
       {/* Display product information when shelf is selected */}
       {isSelected && products && products.length > 0 && (
@@ -178,23 +223,16 @@ const Product = ({ position = [0, 0, 0], size = [0.3, 0.3, 0.3], color = "#ff980
       </mesh>
       
       {hovered && (
-        <Text
-          position={[0, safeSize[1] + 0.1, 0]}
-          fontSize={0.15}
-          color="black"
-          anchorX="center"
-          anchorY="middle"
-          backgroundColor="white"
-          padding={0.05}
-        >
-          {name}
-        </Text>
+        <mesh position={[0, safeSize[1] + 0.1, 0]} castShadow>
+          <boxGeometry args={[0.1, 0.1, 0.1]} />
+          <meshStandardMaterial color="#ffcdd2" />
+        </mesh>
       )}
     </group>
   );
 };
 
-// Camera controller with auto-rotation and limits
+// Camera controller with controls
 const CameraController = ({ autoRotate = false }) => {
   const { camera } = useThree();
   const controlsRef = useRef();
@@ -205,18 +243,76 @@ const CameraController = ({ autoRotate = false }) => {
   }, [camera]);
   
   return (
-    <OrbitControls
-      ref={controlsRef}
-      args={[camera]}
-      enableDamping
-      dampingFactor={0.05}
-      rotateSpeed={0.5}
-      autoRotate={autoRotate}
-      autoRotateSpeed={0.5}
-      minDistance={3}
-      maxDistance={20}
-      maxPolarAngle={Math.PI / 2 - 0.1}
-    />
+    <>
+      <OrbitControls
+        ref={controlsRef}
+        args={[camera]}
+        enableDamping
+        dampingFactor={0.05}
+        rotateSpeed={0.5}
+        autoRotate={autoRotate}
+        autoRotateSpeed={0.5}
+        minDistance={3}
+        maxDistance={20}
+        maxPolarAngle={Math.PI / 2 - 0.1}
+        screenSpacePanning={true}
+      />
+      {/* Add custom navigation UI */}
+      <Html position={[0, 0, 0]} prepend fullscreen>
+        <div className="scene-controls">
+          <div className="scene-controls-container">
+            {/* Zoom controls */}
+            <div className="zoom-controls">
+              <button
+                className="control-button"
+                onClick={() => {
+                  if (controlsRef.current) {
+                    controlsRef.current.object.position.lerp(
+                      new THREE.Vector3(
+                        controlsRef.current.object.position.x * 0.8,
+                        controlsRef.current.object.position.y * 0.8,
+                        controlsRef.current.object.position.z * 0.8
+                      ),
+                      0.5
+                    );
+                  }
+                }}
+              >
+                <span className="material-icons">add</span>
+              </button>
+              <button
+                className="control-button"
+                onClick={() => {
+                  if (controlsRef.current) {
+                    controlsRef.current.object.position.lerp(
+                      new THREE.Vector3(
+                        controlsRef.current.object.position.x * 1.2,
+                        controlsRef.current.object.position.y * 1.2,
+                        controlsRef.current.object.position.z * 1.2
+                      ),
+                      0.5
+                    );
+                  }
+                }}
+              >
+                <span className="material-icons">remove</span>
+              </button>
+            </div>
+            {/* Reset view button */}
+            <button
+              className="control-button reset-view"
+              onClick={() => {
+                if (controlsRef.current) {
+                  controlsRef.current.reset();
+                }
+              }}
+            >
+              <span className="material-icons">center_focus_strong</span>
+            </button>
+          </div>
+        </div>
+      </Html>
+    </>
   );
 };
 
@@ -322,6 +418,8 @@ const Store3D = ({
             rotation={shelf.rotation}
             color={shelf.color}
             products={shelf.products}
+            shelves={shelf.shelves}
+            maxProductsPerShelf={shelf.maxProductsPerShelf}
             isSelected={selectedShelfId === shelf.id}
             onClick={handleShelfClick}
           />

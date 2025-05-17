@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, logoutUser, getUserData } from '../firebase';
+import { auth, logoutUser, getUserData, obtenerProductos } from '../firebase';
 import Sidebar from '../components/Sidebar';
 import MisTiendas from '../components/MisTiendas';
 import './Dashboard.css';
@@ -9,6 +9,8 @@ const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [productos, setProductos] = useState([]);
+  const [loadingProductos, setLoadingProductos] = useState(false);
   const navigate = useNavigate();
 
   // Simplificado - solo cargar datos una vez al iniciar
@@ -80,6 +82,24 @@ const Dashboard = () => {
     loadUserData();
   }, [navigate]);
 
+  // Cargar productos de Firestore
+  useEffect(() => {
+    const cargarProductos = async () => {
+      try {
+        setLoadingProductos(true);
+        const productosData = await obtenerProductos();
+        // Limitar a mostrar solo los primeros 8 productos
+        setProductos(productosData.slice(0, 8));
+      } catch (err) {
+        console.error('Error al cargar productos:', err);
+      } finally {
+        setLoadingProductos(false);
+      }
+    };
+
+    cargarProductos();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -101,6 +121,10 @@ const Dashboard = () => {
     // Pendiente implementar página de planogramas
     console.log('Navegar a planogramas');
     // navigate('/planogramas');
+  };
+
+  const navigateToProductos = () => {
+    navigate('/productos');
   };
 
   if (loading) {
@@ -168,6 +192,49 @@ const Dashboard = () => {
           {/* Sección de Mis Tiendas */}
           <MisTiendas />
           
+          {/* Sección de Productos Globales */}
+          <div className="productos-global-section">
+            <div className="section-header">
+              <h3>Productos Globales</h3>
+              <button className="ver-todos-btn" onClick={navigateToProductos}>
+                Ver todos <span className="material-icons">arrow_forward</span>
+              </button>
+            </div>
+            
+            {loadingProductos ? (
+              <div className="productos-loading">Cargando productos...</div>
+            ) : (
+              <div className="productos-grid">
+                {productos.length > 0 ? (
+                  productos.map(producto => (
+                    <div 
+                      key={producto.id} 
+                      className="producto-card"
+                      onClick={() => navigate(`/productos/${producto.id}`)}
+                    >
+                      <div 
+                        className="producto-color" 
+                        style={{ backgroundColor: producto.color || '#ccc' }}
+                      ></div>
+                      <div className="producto-info">
+                        <h4>{producto.nombre || 'Producto sin nombre'}</h4>
+                        {producto.barcode && <p className="producto-barcode">{producto.barcode}</p>}
+                        {producto.categoria && <p className="producto-categoria">{producto.categoria}</p>}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-productos">
+                    <p>No hay productos registrados.</p>
+                    <button className="add-producto-btn" onClick={navigateToProductos}>
+                      <span className="material-icons">add</span> Agregar Producto
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
           <div className="quick-actions">
             <h3>Acciones Rápidas</h3>
             <div className="actions-grid">
@@ -187,6 +254,11 @@ const Dashboard = () => {
                 <span className="material-icons">dashboard_customize</span>
                 <h4>Planogramas</h4>
                 <p>Gestionar planogramas de tiendas</p>
+              </div>
+              <div className="action-card highlight" onClick={navigateToProductos}>
+                <span className="material-icons">inventory_2</span>
+                <h4>Gestionar Productos</h4>
+                <p>Administrar catálogo de productos</p>
               </div>
             </div>
           </div>

@@ -7,6 +7,8 @@ import RegistroTienda from './pages/RegistroTienda';
 import BusquedaTienda from './pages/BusquedaTienda';
 import TiendaInfo from './pages/TiendaInfo';
 import CrearPlanograma from './pages/CrearPlanograma';
+import ProductosPage from './pages/ProductosPage';
+import EditarProducto from './pages/EditarProducto';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -36,6 +38,39 @@ function App() {
           element={
             <ProtectedRoute>
               <BusquedaTienda />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Rutas para productos */}
+        <Route 
+          path="/productos" 
+          element={
+            <ProtectedRoute>
+              <ProductosPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/productos/nuevo" 
+          element={
+            <ProtectedRoute>
+              <EditarProducto />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/productos/editar/:productoId" 
+          element={
+            <ProtectedRoute>
+              <EditarProducto />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/productos/:productoId" 
+          element={
+            <ProtectedRoute>
+              <ProductosPage />
             </ProtectedRoute>
           } 
         />

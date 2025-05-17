@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { eliminarPlanograma } from '../../firebase';
 import Store3D from './Store3D';
+import PlanogramaConfig from './PlanogramaConfig';
 import './Store3DEditor.css';
 
 const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
@@ -23,12 +24,14 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
   // UI states
   const [selectedShelfId, setSelectedShelfId] = useState(null);
   const [isAddingShelf, setIsAddingShelf] = useState(false);
+  const [configureShelfId, setConfigureShelfId] = useState(null);
   const [viewOptions, setViewOptions] = useState({
     autoRotate: false,
     showFloor: true,
     showWalls: true,
     showSky: true
   });
+  const [configPanelCollapsed, setConfigPanelCollapsed] = useState(false);
   
   // Form states for new shelf (planograma)
   const [newShelf, setNewShelf] = useState({
@@ -43,6 +46,40 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
     color: '#b5a642'
   });
   
+  // Estado para el ID de la tienda actual
+  const [tiendaId, setTiendaId] = useState(null);
+  
+  // Obtener el ID de la tienda cuando se cargan los props
+  useEffect(() => {
+    // Si tenemos tiendaData, usar su ID directamente (prioridad máxima)
+    if (tiendaData && tiendaData.id) {
+      console.log(`[STORE3D] Usando ID de tienda de tiendaData: ${tiendaData.id}`);
+      setTiendaId(tiendaData.id);
+      return;
+    }
+    
+    // Obtener de la URL como respaldo
+    const url = window.location.pathname;
+    const match = url.match(/\/tienda\/([^\/]+)/);
+    if (match && match[1]) {
+      console.log(`[STORE3D] ID de tienda encontrado en URL: ${match[1]}`);
+      setTiendaId(match[1]);
+      return;
+    }
+    
+    // Obtener de los parámetros URL como segunda opción de respaldo
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get('id') || urlParams.get('tiendaId') || urlParams.get('storeId');
+    if (idParam) {
+      console.log(`[STORE3D] ID de tienda encontrado en parámetros: ${idParam}`);
+      setTiendaId(idParam);
+      return;
+    }
+
+    // ADVERTENCIA: No se encontró ID válido de tienda
+    console.error("[STORE3D] ERROR: No se pudo determinar el ID de la tienda");
+  }, [tiendaData]);
+  
   // Update parent component when store data changes
   useEffect(() => {
     if (onStoreDataChange) {
@@ -52,6 +89,8 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
   
   // Find selected shelf
   const selectedShelf = storeData.shelves.find(shelf => shelf.id === selectedShelfId);
+  // Find configuring shelf
+  const configuringShelf = storeData.shelves.find(shelf => shelf.id === configureShelfId);
   
   // Handle shelf selection from 3D view
   const handleShelfSelect = (id) => {
@@ -77,7 +116,10 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
       size: [newShelf.width, newShelf.height, newShelf.depth],
       rotation: [0, newShelf.rotY * (Math.PI / 180), 0], // Convert degrees to radians
       color: newShelf.color,
-      products: []
+      products: [],
+      shelves: [[]],  // Add default shelf configuration with 1 level
+      maxProductsPerShelf: 5,  // Default max products
+      tiendaId: tiendaId  // Add tiendaId to associate shelf with correct store
     };
     
     setStoreData({
@@ -180,12 +222,35 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
     }));
   };
   
+  // Open planogram configuration
+  const handleConfigurePlanogram = () => {
+    if (!selectedShelfId) return;
+    setConfigureShelfId(selectedShelfId);
+  };
+
+  // Save planogram configuration
+  const handleSavePlanogramConfig = (updatedShelf) => {
+    setStoreData(prev => ({
+      ...prev,
+      shelves: prev.shelves.map(shelf => 
+        shelf.id === updatedShelf.id ? { ...shelf, ...updatedShelf } : shelf
+      )
+    }));
+  };
+  
   return (
     <div className="store3d-editor-column">
       {/* Panel de configuración superior */}
-      <div className="config-panel">
+      <div className={`config-panel ${configPanelCollapsed ? 'collapsed' : 'expanded'}`}>
         <div className="config-header">
-          <h3>Configuración de Planogramas</h3>
+          <h3>
+            Configuración de Planogramas
+            {tiendaId && (
+              <span className="current-store-badge">
+                Tienda: {tiendaId}
+              </span>
+            )}
+          </h3>
               <div className="view-options">
                 <label className="checkbox-label">
                   <input 
@@ -238,7 +303,7 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
                       setSelectedShelfId(shelf.id);
                       setIsAddingShelf(false);
                     }}
-                  >
+                >
                     <div className="planograma-color" style={{ backgroundColor: shelf.color }}></div>
                     <div className="planograma-name">{shelf.name}</div>
                   </div>
@@ -376,11 +441,20 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
                     </div>
                   </div>
                   
-                  <div className="control-section">
+                  <div className="control-section control-buttons">
+                    <button 
+                      className="action-button configure-button"
+                      onClick={handleConfigurePlanogram}
+                    >
+                      <span className="material-icons">settings</span>
+                      Configurar Planograma
+                    </button>
+                    
                     <button 
                       className="action-button delete-button"
                       onClick={handleDeleteShelf}
                     >
+                      <span className="material-icons">delete</span>
                       Eliminar Planograma
                     </button>
                   </div>
@@ -388,6 +462,16 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
                 </div>
               )}
             </div>
+        </div>
+        
+        {/* Toggle button */}
+        <div 
+          className="config-toggle"
+          onClick={() => setConfigPanelCollapsed(!configPanelCollapsed)}
+        >
+          <span className="material-icons">
+            {configPanelCollapsed ? 'expand_more' : 'expand_less'}
+          </span>
         </div>
       </div>
       
@@ -402,6 +486,16 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
           showSky={viewOptions.showSky}
         />
       </div>
+
+      {/* Configurador de Planograma (Pantalla Completa) */}
+      {configuringShelf && (
+        <PlanogramaConfig
+          shelf={configuringShelf}
+          onClose={() => setConfigureShelfId(null)}
+          onSave={handleSavePlanogramConfig}
+          tiendaId={tiendaId}
+        />
+      )}
     </div>
   );
 };

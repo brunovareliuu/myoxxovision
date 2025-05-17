@@ -101,6 +101,35 @@
   color: #333;
 }
 
+.instrucciones-config {
+  background-color: #f9f9f9;
+  border-left: 4px solid #e51b24;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 4px;
+}
+
+.instrucciones-config h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.instrucciones-config p {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.instrucciones-config ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.instrucciones-config li {
+  margin-bottom: 0.3rem;
+  color: #555;
+}
+
 .planograma-form {
   display: flex;
   flex-wrap: wrap;
@@ -154,6 +183,14 @@
   cursor: not-allowed;
 }
 
+.save-button.saving {
+  background-color: #ff9800;
+}
+
+.save-button.success {
+  background-color: #4caf50;
+}
+
 /* Estilos para el contenedor del editor 3D */
 .planograma-editor-container {
   flex: 1;
@@ -164,6 +201,44 @@
   display: flex;
   flex-direction: column;
   min-height: 500px;
+}
+
+/* Estilos para estados de carga y error */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #e51b24;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+  padding: 2rem;
+  text-align: center;
+}
+
+.error-message {
+  color: #e51b24;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
 }
 
 /* Estilos para mensajes de éxito y carga */
@@ -195,16 +270,6 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #e51b24;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
 }
 
 @keyframes spin {
@@ -242,16 +307,32 @@
   .planograma-editor-container {
     min-height: 400px;
   }
+  
+  .tienda-info-banner {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .action-button {
+    width: 100%;
+  }
 }
 
 /* Para pantallas muy pequeñas */
 @media (max-width: 480px) {
   .tienda-info-banner {
-    flex-direction: column;
     gap: 0.8rem;
   }
   
   .planograma-form {
     flex-direction: column;
+  }
+  
+  .instrucciones-config {
+    padding: 0.8rem;
+  }
+  
+  .planograma-editor-container {
+    min-height: 350px;
   }
 } 

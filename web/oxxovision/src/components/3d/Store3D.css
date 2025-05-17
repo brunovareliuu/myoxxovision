@@ -110,4 +110,76 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.product-tag {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: Arial, sans-serif;
+}
+
+/* Scene controls */
+.scene-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.scene-controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: all;
+}
+
+.zoom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  padding: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.control-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.control-button:hover {
+  background-color: #e5231b;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.control-button .material-icons {
+  font-size: 20px;
+}
+
+.reset-view {
+  background-color: rgba(66, 133, 244, 0.9);
+  color: white;
+}
+
+.reset-view:hover {
+  background-color: #2b6bcb;
 } 

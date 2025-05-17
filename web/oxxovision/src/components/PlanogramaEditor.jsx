@@ -27,16 +27,13 @@ const Shelf = ({ position, size, rotation, color, id, name, isSelected, onClick 
         metalness={0.2} 
         roughness={0.3} 
       />
-      <Text
+      <mesh
         position={[0, size[1]/2 + 0.1, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.2}
-        color="black"
-        anchorX="center"
-        anchorY="middle"
       >
-        {name}
-      </Text>
+        <boxGeometry args={[0.2, 0.2, 0.2]} />
+        <meshStandardMaterial color={isSelected ? "#4285f4" : "#90caf9"} />
+      </mesh>
     </Box>
   );
 };

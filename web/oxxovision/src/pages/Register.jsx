@@ -30,12 +30,20 @@ const Register = () => {
 
     try {
       setLoading(true);
-      // Registrar al usuario y guardar su nombre
-      const user = await registerUser(email, password, {
+      console.log("Iniciando proceso de registro para:", email);
+      
+      // Registrar al usuario con datos mínimos
+      const userData = {
         nombre: name,
-        rol: 'usuario', // Por defecto asignamos rol de usuario
+        email: email,
+        rol: 'usuario',
         fechaRegistro: new Date()
-      });
+      };
+      
+      console.log("Datos de registro:", { email, name });
+      
+      const user = await registerUser(email, password, userData);
+      console.log("Registro exitoso, usuario creado:", user.uid);
       
       // Guardar datos en localStorage para persistencia
       localStorage.setItem('oxxoSessionToken', 'true');
@@ -44,18 +52,26 @@ const Register = () => {
       localStorage.setItem('oxxoUserName', name);
       localStorage.setItem('newUser', 'true');
       
+      console.log("Datos guardados en localStorage, redirigiendo a dashboard");
+      
       // Redirigir directamente al dashboard en lugar de al login
       navigate('/dashboard');
     } catch (err) {
       console.error('Error al registrar:', err);
+      
+      // Mensajes de error más detallados
       if (err.code === 'auth/email-already-in-use') {
         setError('El correo electrónico ya está en uso');
       } else if (err.code === 'auth/invalid-email') {
         setError('El correo electrónico no es válido');
       } else if (err.code === 'auth/weak-password') {
         setError('La contraseña es demasiado débil');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Error de conexión. Verifica tu conexión a internet.');
+      } else if (err.message && err.message.includes("permissions")) {
+        setError('Error de permisos en Firestore. Por favor contacta al administrador.');
       } else {
-        setError('Error al registrar usuario. Por favor, intenta de nuevo.');
+        setError(`Error al registrar usuario: ${err.message || 'Error desconocido'}`);
       }
     } finally {
       setLoading(false);

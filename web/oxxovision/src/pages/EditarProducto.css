@@ -1,0 +1,495 @@
+/* Estilos para la página de edición de productos */
+.editar-producto-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.editar-producto-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.editar-producto-header h1 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #e5231b;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #c01c14;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: #666;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #555;
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  background-color: #ffdddd;
+  color: #e5231b;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.error-message::before {
+  content: "\f071";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.success-message {
+  background-color: #ddffdd;
+  color: #28a745;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.success-message::before {
+  content: "\f00c";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  font-size: 18px;
+}
+
+/* Formulario */
+.producto-form {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.form-columns {
+  display: flex;
+  gap: 20px;
+}
+
+.form-left-column {
+  flex: 3;
+}
+
+.form-right-column {
+  flex: 2;
+}
+
+.form-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border-left: 3px solid #e5231b;
+}
+
+.form-section h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-section h3 i {
+  color: #e5231b;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-group.half {
+  flex: 1;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: #e5231b;
+  outline: none;
+}
+
+.color-input-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+input[type="color"] {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.color-value {
+  font-family: monospace;
+  color: #555;
+}
+
+.form-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+/* Sección de imagen */
+.image-section {
+  border-left-color: #2196f3;
+}
+
+.image-section h3 i {
+  color: #2196f3;
+}
+
+.image-preview-container {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.image-preview {
+  width: 100%;
+  height: 200px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+  color: #888;
+}
+
+.image-placeholder i {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.remove-image-btn {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.remove-image-btn:hover {
+  background-color: #d32f2f;
+}
+
+.image-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-btn {
+  padding: 10px 20px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.upload-btn:hover {
+  background-color: #0b7dda;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-requirements {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+/* Vista previa */
+.preview-section {
+  border-left-color: #4caf50;
+}
+
+.preview-section h3 i {
+  color: #4caf50;
+}
+
+.product-preview-card {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.preview-color, .preview-image {
+  height: 140px;
+  width: 100%;
+}
+
+.preview-image {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.preview-content {
+  padding: 15px;
+}
+
+.preview-content h4 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-barcode, .preview-categoria {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.preview-categoria {
+  display: inline-flex;
+  background-color: #f0f0f0;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #555;
+}
+
+.loading-message {
+  padding: 30px;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin: 20px 0;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-columns {
+    flex-direction: column;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .form-group.half {
+    width: 100%;
+  }
+  
+  .header-actions {
+    display: none;
+  }
+  
+  .form-actions {
+    padding: 10px;
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    border-top: 1px solid #eee;
+    margin: 0 -20px -20px -20px;
+    padding: 15px 20px;
+  }
+}
+
+/* Estilos para indicador de guardado y barra de progreso */
+.saving-indicator {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 3px solid #2196f3;
+}
+
+.saving-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2196f3;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.saving-message i {
+  font-size: 18px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #2196f3;
+  transition: width 0.3s ease;
+}
+
+/* Estilos para botones deshabilitados */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.upload-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #999;
+  pointer-events: none;
+}
+
+/* Estilos para el componente FileUpload en el formulario de edición */
+.product-image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product-form-image-upload {
+  height: 200px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.remove-image-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+}
+
+.remove-image-btn:hover {
+  background-color: #d32f2f;
+}
+
+.remove-image-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.file-requirements {
+  font-size: 12px;
+  color: #666;
+  margin: 5px 0 0 0;
+} 

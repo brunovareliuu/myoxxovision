@@ -1,0 +1,3973 @@
+/* Estilos para el configurador de planogramas con drag and drop */
+.planograma-config-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.planograma-config-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.planograma-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f5f5f5;
+}
+
+.planograma-config-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.planograma-config-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+.config-section {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 15px;
+  border: 1px solid #eee;
+}
+
+.config-section h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #444;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  flex: 1;
+}
+
+.form-group label {
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.form-group input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.config-main {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.available-products-section {
+  flex: 0 0 300px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 15px;
+  border: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+}
+
+.category-selector {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.category-selector label {
+  font-size: 14px;
+  color: #555;
+}
+
+.category-selector select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: white;
+  font-size: 14px;
+}
+
+.available-products-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 5px;
+  overflow-y: auto;
+  flex: 1;
+  padding: 5px;
+}
+
+.available-product {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: move;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.available-product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.available-product.dragging {
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+.available-product .product-color,
+.available-product .product-image {
+  width: 30px;
+  height: 30px;
+}
+
+.available-product .product-name {
+  font-size: 10px;
+  text-align: center;
+}
+
+.drag-instructions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 0;
+  gap: 10px;
+  color: #666;
+  font-size: 14px;
+  margin-top: 10px;
+  border-top: 1px dashed #ddd;
+}
+
+.shelf-configuration {
+  flex: 1;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 15px;
+  border: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+}
+
+.shelves-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+  max-height: 400px;
+  padding-right: 5px;
+}
+
+.shelf-drop-zone {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 15px;
+  transition: border-color 0.2s, background-color 0.2s;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.shelf-drop-zone.active {
+  border-color: #4285f4;
+  background-color: rgba(66, 133, 244, 0.05);
+}
+
+.shelf-drop-zone.no-drop {
+  border-color: #f44336;
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.shelf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.shelf-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.product-count {
+  font-size: 11px;
+  color: #666;
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.shelf-products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 50px;
+}
+
+.draggable-product {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: move;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.draggable-product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  border-color: #4285f4;
+}
+
+.remove-product {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.draggable-product:hover .remove-product {
+  opacity: 1;
+}
+
+.remove-product .material-icons {
+  font-size: 14px;
+}
+
+.empty-shelf {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+  position: relative;
+}
+
+.shelf-full {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f44336;
+  font-weight: 500;
+}
+
+.planograma-config-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f5f5f5;
+  gap: 10px;
+}
+
+.cancel-button, .save-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.save-button {
+  background-color: #e5231b;
+  border: 1px solid #e5231b;
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #d01c14;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .config-main {
+    flex-direction: column;
+  }
+  
+  .available-products-section {
+    flex: initial;
+    margin-bottom: 15px;
+  }
+  
+  .available-products-list {
+    max-height: 200px;
+  }
+  
+  .planograma-config-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+}
+
+/* Estilos para el configurador de planogramas con vista pantalla completa */
+.planograma-config-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.planograma-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.planograma-config-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.planograma-config-content {
+  display: flex;
+  gap: 10px;
+}
+
+/* Panel de catálogo de productos (izquierda) */
+.product-catalog-panel {
+  flex: 0 0 20%;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 70vh;
+}
+
+.product-catalog-panel h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.category-selector {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.category-selector label {
+  font-size: 14px;
+  color: #555;
+}
+
+.category-selector select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: white;
+  font-size: 14px;
+}
+
+.available-products-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 5px;
+  overflow-y: auto;
+  flex: 1;
+  padding: 5px;
+}
+
+.available-product {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: move;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.available-product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.available-product.dragging {
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+.available-product .product-color,
+.available-product .product-image {
+  width: 30px;
+  height: 30px;
+}
+
+.available-product .product-name {
+  font-size: 10px;
+  text-align: center;
+}
+
+.drag-instructions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 0;
+  gap: 10px;
+  color: #666;
+  font-size: 14px;
+  margin-top: 10px;
+  border-top: 1px dashed #ddd;
+}
+
+/* Panel de configuración de estante (centro) */
+.shelf-configuration-panel {
+  flex: 0 0 35%;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shelf-configuration-panel h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.shelf-properties {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  flex: 1;
+}
+
+.form-group label {
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.form-group input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.shelves-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.shelf-drop-zone {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 15px;
+  transition: border-color 0.2s, background-color 0.2s;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.shelf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.shelf-products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 50px;
+}
+
+.draggable-product {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: move;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.draggable-product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  border-color: #4285f4;
+}
+
+.remove-product {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.draggable-product:hover .remove-product {
+  opacity: 1;
+}
+
+.remove-product .material-icons {
+  font-size: 14px;
+}
+
+.empty-shelf {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+  position: relative;
+}
+
+.shelf-full {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f44336;
+  font-weight: 500;
+}
+
+/* Panel de visualización 3D (derecha) */
+.shelf-preview-panel {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shelf-preview-panel h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.shelf-3d-container {
+  flex: 1;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Botones */
+.save-button, .cancel-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.save-button {
+  background-color: #e5231b;
+  border: 1px solid #e5231b;
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #d01c14;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .planograma-config-content {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  
+  .product-catalog-panel,
+  .shelf-configuration-panel,
+  .shelf-preview-panel {
+    flex: none;
+    width: 100%;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .product-catalog-panel {
+    max-height: 300px;
+  }
+  
+  .available-products-list {
+    max-height: 200px;
+  }
+}
+
+/* Product image styles */
+.product-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid #e0e0e0;
+}
+
+/* Loading and error states */
+.loading-products {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 15px;
+  color: #666;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #2196f3;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 10px;
+  color: #f44336;
+  text-align: center;
+}
+
+.no-products {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Grid-based product layout */
+.shelf-products-grid {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-height: 70px;
+  margin-bottom: 10px;
+}
+
+.product-slot {
+  aspect-ratio: 1/1;
+  min-height: 60px;
+  max-height: 80px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-product-slot {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed #dddddd;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbbbbb;
+  background-color: #f9f9f9;
+  transition: all 0.2s;
+  position: relative;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.empty-product-slot:hover {
+  border-color: #4285f4;
+  color: #4285f4;
+  background-color: rgba(66, 133, 244, 0.05);
+}
+
+.shelf-full-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(244, 67, 54, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f44336;
+  font-weight: 500;
+  font-size: 16px;
+  border-radius: 6px;
+  z-index: 10;
+}
+
+/* Update draggable product for grid layout */
+.draggable-product {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: move;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.draggable-product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  border-color: #4285f4;
+}
+
+.draggable-product .product-color,
+.draggable-product .product-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.draggable-product .product-name {
+  font-size: 11px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Product selector modal */
+.product-selector-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.product-selector-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.product-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8f8f8;
+}
+
+.product-selector-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.product-selector-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.product-selector-item {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-selector-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  border-color: #2196f3;
+}
+
+.product-selector-item .product-image,
+.product-selector-item .product-color {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+}
+
+.product-selector-item .product-name {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Realistic 2D Shelf View Styles */
+.modal-2d-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 1400px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-2d-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8f8f8;
+}
+
+.modal-2d-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-2d-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background-color: white;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.realistic-shelf-container {
+  max-width: 98%;
+  margin: 0 auto;
+}
+
+.realistic-shelf {
+  background-color: #f5f5f5;
+  border: 1px solid #333;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 20px; /* Espacio para la base */
+}
+
+.shelf-title {
+  background-color: #e5231b;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+  font-size: 18px;
+  border-bottom: 1px solid #333;
+}
+
+/* Grilla de estantes */
+.shelf-grid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #f5f5f5;
+  background-image: 
+    repeating-linear-gradient(180deg, 
+      transparent, 
+      transparent 98%, 
+      #999 98%, 
+      #999 100%),
+    repeating-linear-gradient(90deg, 
+      transparent, 
+      transparent 98%, 
+      #999 98%, 
+      #999 100%);
+  background-size: 25px 200px, 200px 25px;
+  position: relative;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Marco metálico en el fondo */
+.shelf-grid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(90deg, 
+      rgba(0,0,0,0.1) 0px, 
+      rgba(0,0,0,0.1) 1px, 
+      transparent 1px, 
+      transparent 20px),
+    repeating-linear-gradient(0deg, 
+      rgba(0,0,0,0.1) 0px, 
+      rgba(0,0,0,0.1) 1px, 
+      transparent 1px, 
+      transparent 20px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Nivel de estante individual */
+.shelf-level {
+  position: relative;
+  min-height: 140px;
+  border-bottom: 2px solid #999;
+  padding: 15px 10px 5px 10px;
+  display: flex;
+  flex-direction: column;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent 200px,
+    rgba(0, 0, 0, 0.1) 200px,
+    rgba(0, 0, 0, 0.1) 202px
+  );
+}
+
+/* Barras metálicas de soporte */
+.shelf-level::before, .shelf-level::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-color: #666;
+  background-image: linear-gradient(to bottom, #777, #555);
+  z-index: 2;
+}
+
+.shelf-level::before {
+  top: 0;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+
+.shelf-level::after {
+  bottom: 0;
+  box-shadow: 0 -2px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Número del nivel */
+.level-number {
+  position: absolute;
+  left: 5px;
+  top: 40%;
+  transform: translateY(-50%);
+  width: 25px;
+  height: 25px;
+  color: white;
+  background-color: #e5231b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  background-image: linear-gradient(to bottom, #f04c41, #c41c10);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* Contenedor de productos */
+.products-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 2px;
+  padding-left: 30px; /* Espacio para el número de nivel */
+  min-height: 120px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+}
+
+/* Producto individual */
+.shelf-product {
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  z-index: 3;
+  transition: transform 0.2s;
+}
+
+.shelf-product:hover {
+  transform: translateY(-5px);
+  z-index: 4;
+}
+
+/* Espacio vacío */
+.shelf-product.empty {
+  background-color: transparent;
+  min-width: 15px;
+}
+
+/* Imagen de producto realista */
+.product-image-realistic {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+  transition: transform 0.2s, filter 0.2s;
+  position: relative;
+  z-index: 2;
+}
+
+.shelf-product:hover .product-image-realistic {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  transform: scale(1.05);
+}
+
+/* Placeholder para producto sin imagen */
+.product-placeholder {
+  width: 80%;
+  height: 80%;
+  background-color: rgba(225, 225, 225, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border: 1px solid rgba(200, 200, 200, 0.8);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Placeholder de respaldo para imágenes que fallan */
+.product-placeholder-backup {
+  background-color: rgba(245, 245, 245, 0.95);
+  width: 100%;
+  height: 90%;
+  border: 1px solid #e5e5e5;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.shelf-product:hover .product-placeholder,
+.shelf-product:hover .product-placeholder-backup {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transform: scale(1.05);
+}
+
+.product-code {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+}
+
+/* Ajustes específicos para vista compacta */
+.shelf-product.compact .product-image-realistic {
+  width: 100%;
+  height: 90%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.shelf-product.compact .product-placeholder,
+.shelf-product.compact .product-placeholder-backup {
+  width: 100%;
+  height: 90%;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 10px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+  color: #666;
+}
+
+/* Base del estante */
+.shelf-base {
+  height: 15px;
+  background-color: #999;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.2) inset;
+  background-image: linear-gradient(to bottom, #a5a5a5, #777);
+  border-top: 1px solid #666;
+}
+
+/* Ajustes para el contenedor modal */
+.modal-2d-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 1400px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-2d-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background-color: white;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* Estilos para notificaciones de guardado */
+.save-notification {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-right: 10px;
+  font-size: 14px;
+  animation: fadeIn 0.3s ease;
+}
+
+.save-notification.saving {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.save-notification.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.save-notification.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.notification-message {
+  margin-left: 8px;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(21, 101, 192, 0.2);
+  border-top-color: #1565c0;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.save-button.has-changes {
+  background-color: #f57c00;
+  border-color: #f57c00;
+  animation: pulse 2s infinite;
+}
+
+.save-button:disabled {
+  background-color: #cccccc;
+  border-color: #bbbbbb;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 124, 0, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(245, 124, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 124, 0, 0);
+  }
+}
+
+/* Auto-save toggle */
+.auto-save-toggle {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.auto-save-toggle label {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auto-save-toggle input[type="checkbox"] {
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+/* Animation for auto-save */
+@keyframes pulse {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+.save-button.has-changes {
+  animation: pulse 1.5s infinite;
+  background-color: #ff9800;
+}
+
+/* Mejorar estilos para notificaciones de guardado */
+.save-notification {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-right: 10px;
+  font-size: 12px;
+}
+
+.save-notification.success {
+  background-color: rgba(76, 175, 80, 0.8);
+}
+
+.save-notification.error {
+  background-color: rgba(244, 67, 54, 0.8);
+}
+
+.save-notification.saving {
+  background-color: rgba(255, 152, 0, 0.8);
+}
+
+.save-notification .icon {
+  margin-right: 5px;
+}
+
+/* Mejorar el estilo para los campos de entrada numéricos */
+input[type="number"].max-products-input {
+  width: 40px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+/* Mejorar el aspecto de las ranuras vacías */
+.empty-product-slot.can-drop {
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.empty-product-slot.can-drop:hover {
+  background-color: rgba(66, 133, 244, 0.1);
+  border-color: #4285f4;
+  transform: scale(1.05);
+}
+
+.level-product-count {
+  position: absolute;
+  right: 15px;
+  top: 12px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* Estilos para la vista de estante OXXO realista */
+.oxxo-shelf-container {
+  max-width: 98%;
+  margin: 0 auto;
+}
+
+.oxxo-shelf {
+  background-color: #f5f5f5;
+  border: 1px solid #333;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 20px; /* Espacio para la base */
+}
+
+.shelf-title {
+  background-color: #e5231b;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+  font-size: 18px;
+  border-bottom: 1px solid #333;
+}
+
+/* Grilla de estantes */
+.shelf-grid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #f5f5f5;
+  background-image: 
+    repeating-linear-gradient(180deg, 
+      transparent, 
+      transparent 98%, 
+      #999 98%, 
+      #999 100%),
+    repeating-linear-gradient(90deg, 
+      transparent, 
+      transparent 98%, 
+      #999 98%, 
+      #999 100%);
+  background-size: 25px 200px, 200px 25px;
+  position: relative;
+}
+
+/* Marco metálico en el fondo */
+.shelf-grid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(90deg, 
+      rgba(0,0,0,0.1) 0px, 
+      rgba(0,0,0,0.1) 1px, 
+      transparent 1px, 
+      transparent 20px),
+    repeating-linear-gradient(0deg, 
+      rgba(0,0,0,0.1) 0px, 
+      rgba(0,0,0,0.1) 1px, 
+      transparent 1px, 
+      transparent 20px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Nivel de estante individual */
+.shelf-level {
+  position: relative;
+  min-height: 140px;
+  border-bottom: 2px solid #999;
+  padding: 15px 10px 5px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Barras metálicas de soporte */
+.shelf-level::before, .shelf-level::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-color: #666;
+  background-image: linear-gradient(to bottom, #777, #555);
+  z-index: 2;
+}
+
+.shelf-level::before {
+  top: 0;
+}
+
+.shelf-level::after {
+  bottom: 0;
+}
+
+/* Número del nivel */
+.level-number {
+  position: absolute;
+  left: 5px;
+  top: 40%;
+  transform: translateY(-50%);
+  width: 25px;
+  height: 25px;
+  color: white;
+  background-color: #e5231b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+}
+
+/* Contenedor de productos */
+.products-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 2px;
+  padding-left: 30px; /* Espacio para el número de nivel */
+  min-height: 120px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+/* Producto individual */
+.shelf-product {
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  z-index: 3;
+  transition: transform 0.2s;
+}
+
+.shelf-product:hover {
+  transform: translateY(-5px);
+  z-index: 4;
+}
+
+/* Espacio vacío */
+.shelf-product.empty {
+  background-color: transparent;
+  min-width: 15px;
+}
+
+/* PlanogramaConfig.css - Enterprise-grade planogram configuration styles */
+
+/* Main layout */
+.planograma-config-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f8f9fa;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+  color: #212529;
+  overflow: hidden;
+}
+
+/* Header styles */
+.planograma-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(90deg, #ff0000 0%, #c00000 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.planograma-config-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.close-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Two-column layout */
+.planograma-config-two-columns {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left column - Product Catalog */
+.product-catalog-side {
+  width: 350px;
+  background-color: white;
+  border-right: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.product-catalog-side h4 {
+  margin: 0;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-bottom: 1px solid #e9ecef;
+  color: #495057;
+}
+
+.category-selector {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.category-selector label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.category-selector select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background-color: white;
+  color: #495057;
+  transition: border-color 0.2s;
+}
+
+.category-selector select:focus {
+  border-color: #ff0000;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.25);
+}
+
+.available-products-grid {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.catalog-product-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: grab;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.catalog-product-item:hover {
+  border-color: #ff0000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.catalog-product-item:active {
+  cursor: grabbing;
+}
+
+.catalog-product-image {
+  width: 80px;
+  height: 80px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 8px;
+}
+
+.catalog-product-color {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.catalog-product-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  color: #333;
+  min-height: 32px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+  padding: 4px 2px;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  margin-top: 3px;
+}
+
+.drag-instructions {
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.loading-products {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #6c757d;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #ff0000;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Right column - Planogram Configuration */
+.planogram-config-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.planogram-config-side h4 {
+  margin: 0;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-bottom: 1px solid #e9ecef;
+  color: #495057;
+  background-color: white;
+}
+
+.planogram-view-buttons {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.view-mode-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: white;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  color: #495057;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-mode-button:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.view-mode-button .material-icons {
+  font-size: 1.25rem;
+}
+
+.planogram-config-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background-color: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.config-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-control-group label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.config-control-group input {
+  width: 100px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+.config-control-group input:focus {
+  border-color: #ff0000;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.25);
+}
+
+.planogram-levels {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.planogram-level {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.level-header h5 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.level-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.level-product-count {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.level-max-input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #495057;
+}
+
+.level-drop-area {
+  padding: 16px;
+  min-height: 100px;
+  border: 2px dashed #e9ecef;
+  border-radius: 4px;
+  margin: 16px;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+}
+
+.level-drop-area.drag-over {
+  border-color: #ff0000;
+  background-color: rgba(255, 0, 0, 0.05);
+}
+
+.empty-level-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: #adb5bd;
+  font-size: 0.875rem;
+}
+
+.level-products-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 5px;
+  overflow-x: auto;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.level-product {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 90px;
+  min-height: 110px;
+  flex: 0 0 auto;
+}
+
+.level-product:hover {
+  border-color: #ffc107;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.level-product-image {
+  width: 60px;
+  height: 60px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 4px;
+}
+
+.level-product-color {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.level-product-code {
+  font-size: 0.875rem;
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2px 4px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.remove-level-product {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s;
+  font-size: 0.75rem;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.level-product:hover .remove-level-product {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.add-product-placeholder {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ced4da;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.add-product-placeholder:hover {
+  border-color: #ff0000;
+  background-color: rgba(255, 0, 0, 0.05);
+}
+
+.add-icon {
+  font-size: 1.5rem;
+  font-weight: 300;
+}
+
+/* Product Selector Modal */
+.product-selector-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.product-selector-content {
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.product-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.product-selector-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #212529;
+}
+
+.product-selector-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.product-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.product-selector-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.product-selector-item:hover {
+  border-color: #ff0000;
+  background-color: rgba(255, 0, 0, 0.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.product-image {
+  width: 80px;
+  height: 80px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.product-color {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.product-name {
+  font-size: 0.75rem;
+  text-align: center;
+  color: #495057;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Save functionality */
+.auto-save-toggle {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 4px 12px;
+}
+
+.auto-save-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.save-button {
+  padding: 6px 16px;
+  background-color: white;
+  border: none;
+  border-radius: 4px;
+  color: #ff0000;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-button:hover {
+  background-color: #f0f0f0;
+}
+
+.save-button.has-changes {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+.save-notification {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.75rem;
+}
+
+.save-notification.success {
+  background-color: rgba(40, 167, 69, 0.2);
+}
+
+.save-notification.error {
+  background-color: rgba(220, 53, 69, 0.2);
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+/* Modal 3D content */
+.modal-3d-content {
+  width: 90%;
+  max-width: 1000px;
+  height: 90vh;
+  max-height: 800px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-3d-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.modal-3d-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #212529;
+}
+
+.modal-3d-body {
+  flex: 1;
+  position: relative;
+}
+
+/* Modal 2D content */
+.modal-2d-content {
+  width: 90%;
+  max-width: 1000px;
+  height: 90vh;
+  max-height: 800px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-2d-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.modal-2d-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-2d-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background-color: white;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* 2D Shelf View Styles */
+.oxxo-shelf-container {
+  padding: 24px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.oxxo-shelf {
+  background: linear-gradient(to bottom, #444444, #222222);
+  border-radius: 4px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.shelf-title {
+  text-align: center;
+  color: white;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.shelf-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  padding: 2px;
+  background-color: #333333;
+  border-radius: 4px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.shelf-level {
+  display: flex;
+  background-color: #444444;
+  border-radius: 2px;
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+}
+
+.level-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  background-color: #333333;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.products-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666666 #333333;
+}
+
+.products-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.products-container::-webkit-scrollbar-track {
+  background: #333333;
+}
+
+.products-container::-webkit-scrollbar-thumb {
+  background-color: #666666;
+  border-radius: 3px;
+}
+
+.shelf-product {
+  flex: 0 0 auto;
+  height: 100px;
+  width: 80px;
+  margin: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.shelf-product:hover {
+  transform: translateY(-3px);
+  z-index: 1;
+}
+
+.product-image-realistic {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  transition: all 0.2s;
+}
+
+.shelf-product:hover .product-image-realistic {
+  transform: scale(1.05);
+}
+
+.product-placeholder {
+  width: 70px;
+  height: 85px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s;
+}
+
+.shelf-product:hover .product-placeholder {
+  transform: scale(1.05);
+}
+
+.shelf-product.empty {
+  opacity: 0.25;
+}
+
+.shelf-base {
+  height: 20px;
+  background: linear-gradient(to bottom, #333333, #222222);
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  margin-top: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.shelf-base:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive fixes */
+@media (max-width: 1200px) {
+  .planograma-config-two-columns {
+    flex-direction: column;
+  }
+  
+  .product-catalog-side {
+    width: 100%;
+    height: 40%;
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .planogram-config-side {
+    height: 60%;
+  }
+} 
+
+/* Mejoras para la visualización y el scroll */
+.planogram-config-side {
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+.product-catalog-side {
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+.available-products-grid {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+.planogram-levels {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.level-product {
+  min-width: 90px;
+}
+
+.level-product-image {
+  min-height: 65px;
+}
+
+/* Mejorar la visibilidad del nombre de producto */
+.product-name, .catalog-product-name, .level-product .product-name {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 3px 5px;
+  border-radius: 4px;
+  margin-top: 4px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Mejorar scrollbars */
+.planogram-config-side::-webkit-scrollbar,
+.product-catalog-side::-webkit-scrollbar,
+.available-products-grid::-webkit-scrollbar,
+.planogram-levels::-webkit-scrollbar,
+.level-products-grid::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.planogram-config-side::-webkit-scrollbar-track,
+.product-catalog-side::-webkit-scrollbar-track,
+.available-products-grid::-webkit-scrollbar-track,
+.planogram-levels::-webkit-scrollbar-track,
+.level-products-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.planogram-config-side::-webkit-scrollbar-thumb,
+.product-catalog-side::-webkit-scrollbar-thumb,
+.available-products-grid::-webkit-scrollbar-thumb,
+.planogram-levels::-webkit-scrollbar-thumb,
+.level-products-grid::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.planogram-config-side::-webkit-scrollbar-thumb:hover,
+.product-catalog-side::-webkit-scrollbar-thumb:hover,
+.available-products-grid::-webkit-scrollbar-thumb:hover,
+.planogram-levels::-webkit-scrollbar-thumb:hover,
+.level-products-grid::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Mejoras críticas para visibilidad de productos y shelves */
+
+/* Hacer visibles los títulos y nombres de productos */
+.product-name, .catalog-product-name, .level-product .product-name {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  text-align: center;
+  margin-top: 5px;
+  width: 100%;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 5;
+  position: relative;
+}
+
+/* Mejorar visibilidad del producto en el nivel */
+.level-product {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  transition: all 0.2s;
+  overflow: visible !important; /* Importante para que se vean los nombres */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  width: 90px;
+  min-height: 110px;
+  margin: 0 5px 15px 5px;
+  flex: 0 0 auto;
+}
+
+.level-product:hover {
+  transform: translateY(-5px);
+  z-index: 10;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  border-color: #dc3545;
+}
+
+/* Mejorar la visibilidad de las imágenes de productos */
+.level-product-image {
+  width: 70px;
+  height: 70px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+/* Mejorar el color placeholder para que sea visible */
+.level-product-color {
+  width: 70px;
+  height: 70px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Mejorar la visualización del grid de productos */
+.level-products-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+  min-height: 150px;
+  max-height: 180px;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  align-content: flex-start;
+  justify-content: flex-start;
+}
+
+/* Mejorar la visualización en el modal de selección de productos */
+.product-selector-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.product-selector-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 900px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.product-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #dc3545;
+  color: white;
+}
+
+.product-selector-header h4 {
+  margin: 0;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.product-selector-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-grid {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  background-color: #f9f9f9;
+}
+
+.product-selector-item {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: relative;
+  height: 140px;
+}
+
+.product-selector-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  border-color: #dc3545;
+}
+
+.product-image {
+  width: 80px;
+  height: 80px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.product-color {
+  width: 80px;
+  height: 80px;
+  background-color: #dc3545;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.product-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+  background-color: #f9f9f9;
+  padding: 5px;
+  border-radius: 3px;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* Mejorar la visualización del catálogo */
+.catalog-product-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: grab;
+  transition: all 0.2s;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  height: 140px;
+}
+
+.catalog-product-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  border-color: #dc3545;
+}
+
+.catalog-product-image {
+  width: 80px;
+  height: 80px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.catalog-product-color {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.catalog-product-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+  background-color: #f9f9f9;
+  padding: 5px;
+  border-radius: 3px;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* Mejorar la configuración del nivel */
+.planogram-level {
+  background-color: white;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  overflow: visible;
+}
+
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  border-radius: 8px 8px 0 0;
+}
+
+.level-header h5 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.level-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.level-product-count {
+  background-color: #dc3545;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.level-drop-area {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border: 2px dashed #ddd;
+  border-radius: 4px;
+  margin: 15px;
+  transition: all 0.2s;
+}
+
+.level-drop-area.drag-over {
+  border-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* Botón para añadir producto */
+.add-product-placeholder {
+  width: 90px;
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9f9f9;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0 5px 15px 5px;
+}
+
+.add-product-placeholder:hover {
+  background-color: #f0f0f0;
+  border-color: #dc3545;
+  transform: translateY(-5px);
+}
+
+.add-icon {
+  font-size: 24px;
+  color: #dc3545;
+  margin-bottom: 5px;
+}
+
+/* Mejoras a la visibilidad de los scrollbars */
+.level-products-grid::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.level-products-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.level-products-grid::-webkit-scrollbar-thumb {
+  background: #dc3545;
+  border-radius: 4px;
+}
+
+.product-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.product-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.product-grid::-webkit-scrollbar-thumb {
+  background: #dc3545;
+  border-radius: 4px;
+}
+
+/* Mejoras para el modo responsivo */
+@media (max-width: 768px) {
+  .level-products-grid {
+    max-height: 300px;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* Arreglar botón para eliminar productos */
+.remove-level-product {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Estilos para el modo compacto del planograma 2D */
+.products-container.compact-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666666 #333333;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.shelf-product.compact {
+  flex: 0 0 auto;
+  height: 100px;
+  width: auto;
+  min-width: 50px; /* Ancho mínimo para asegurar visibilidad */
+  max-width: 70px; /* Ancho máximo para que se vean más productos */
+  margin: 0 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.shelf-product.compact:hover {
+  transform: translateY(-3px) scale(1.05);
+  z-index: 10;
+}
+
+.shelf-product.compact .product-image-realistic {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+.shelf-product.compact .product-placeholder {
+  width: 100%;
+  height: 85%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+.shelf-product.compact.empty {
+  opacity: 0.15;
+  min-width: 20px; /* Ancho mínimo más pequeño para espacios vacíos */
+}
+
+.products-container.compact-view::-webkit-scrollbar {
+  height: 4px;
+}
+
+.products-container.compact-view::-webkit-scrollbar-track {
+  background: #333333;
+}
+
+.products-container.compact-view::-webkit-scrollbar-thumb {
+  background-color: #666666;
+  border-radius: 2px;
+}
+
+/* Media queries para asegurar responsividad */
+@media (max-width: 768px) {
+  .shelf-product.compact {
+    min-width: 40px;
+    max-width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shelf-product.compact {
+    min-width: 30px;
+    max-width: 50px;
+  }
+}
+
+/* Ajustar la altura del shelf level para más productos */
+.shelf-level {
+  display: flex;
+  background-color: #444444;
+  border-radius: 2px;
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+}
+
+.level-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  background-color: #333333;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.empty-level-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* Mejoras para el modo ultracompacto */
+.products-container.compact-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666666 #333333;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0; /* Sin espacio entre productos */
+}
+
+/* Hacer que no aparezca el scroll horizontal a menos que sea necesario */
+.products-container.compact-view::-webkit-scrollbar {
+  height: 4px;
+  opacity: 0.6;
+}
+
+.products-container.compact-view:hover::-webkit-scrollbar {
+  opacity: 1;
+}
+
+.shelf-product.compact {
+  flex: 0 0 auto;
+  height: 100px;
+  min-width: 30px; /* Ancho mínimo menor */
+  max-width: 70px; /* Ancho máximo ajustado */
+  margin: 0;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, z-index 0.15s;
+  position: relative;
+}
+
+/* Mejorar la transición al pasar el mouse por encima */
+.shelf-product.compact:hover {
+  transform: translateY(-3px) scale(1.1);
+  z-index: 10;
+  transition-delay: 0.05s;
+}
+
+/* Ajustes para la altura del estante */
+.shelf-level {
+  display: flex;
+  background-color: #444444;
+  border-radius: 2px;
+  height: 110px; /* Ligeramente más pequeño para un aspecto más compacto */
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+  margin-bottom: 1px; /* Espaciado mínimo entre niveles */
+}
+
+/* Número de nivel más pequeño y discreto */
+.level-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px; /* Más estrecho */
+  background-color: #333333;
+  color: white;
+  font-weight: bold;
+  font-size: 12px; /* Texto más pequeño */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Optimizaciones para imágenes de productos */
+.shelf-product.compact .product-image-realistic {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  transition: transform 0.15s;
+}
+
+.shelf-product.compact .product-placeholder {
+  width: 100%;
+  height: 90%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 11px; /* Texto más pequeño */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  transition: transform 0.15s;
+}
+
+/* Espacios vacíos más discretos */
+.shelf-product.compact.empty {
+  opacity: 0.1;
+  min-width: 15px; /* Ancho mínimo muy pequeño para espacios vacíos */
+  max-width: 25px;
+}
+
+/* Contenedor global del estante más estrecho */
+.oxxo-shelf-container {
+  padding: 15px; /* Menos padding */
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  max-width: 100%; /* Asegurar que use todo el ancho disponible */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .shelf-product.compact {
+    min-width: 25px;
+    max-width: 50px;
+  }
+  
+  .shelf-level {
+    height: 100px; /* Altura más baja en pantallas pequeñas */
+  }
+}
+
+@media (max-width: 480px) {
+  .shelf-product.compact {
+    min-width: 20px;
+    max-width: 40px;
+  }
+  
+  .level-number {
+    width: 20px;
+    font-size: 10px;
+  }
+}
+
+/* Estilos mejorados para vista 2D - White Theme */
+.oxxo-shelf-container {
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin: 0 auto;
+}
+
+.oxxo-shelf {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  padding: 8px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  width: 100%;
+}
+
+.shelf-title {
+  text-align: center;
+  color: #333333;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  background-color: #f7f7f7;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.shelf-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  padding: 2px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+}
+
+.shelf-level {
+  display: flex;
+  background-color: #f9f9f9;
+  border-radius: 2px;
+  height: 110px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1px;
+  border: 1px solid #eaeaea;
+}
+
+.level-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  background-color: #f0f0f0;
+  color: #333;
+  font-weight: bold;
+  font-size: 12px;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.1);
+  border-right: 1px solid #e0e0e0;
+}
+
+/* Modal 2D content ajustado para mejor visualización */
+.modal-2d-content {
+  width: 98%;
+  max-width: 1800px;
+  height: 92vh;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-2d-body {
+  flex: 1;
+  overflow: auto;
+  padding: 15px;
+  background-color: white;
+}
+
+/* Mejorar apariencia del viewport del planograma */
+.products-container.compact-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cccccc #f5f5f5;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;
+  background-color: white;
+}
+
+.products-container.compact-view::-webkit-scrollbar {
+  height: 4px;
+  opacity: 0.6;
+}
+
+.products-container.compact-view::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.products-container.compact-view::-webkit-scrollbar-thumb {
+  background-color: #cccccc;
+  border-radius: 2px;
+}
+
+.shelf-product.compact {
+  flex: 0 0 auto;
+  height: 100px;
+  min-width: 30px;
+  max-width: 70px;
+  margin: 0;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, z-index 0.15s;
+  position: relative;
+}
+
+.shelf-product.compact:hover {
+  transform: translateY(-3px) scale(1.1);
+  z-index: 10;
+  transition-delay: 0.05s;
+}
+
+.shelf-product.compact .product-image-realistic {
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+  transition: transform 0.15s;
+}
+
+.shelf-product.compact .product-placeholder {
+  width: 100%;
+  height: 90%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 11px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+  transition: transform 0.15s;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.shelf-product.compact.empty {
+  opacity: 0.1;
+  min-width: 15px;
+  max-width: 25px;
+  background-color: #f9f9f9;
+}
+
+/* Base del estante */
+.shelf-base {
+  height: 15px;
+  background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  margin-top: 4px;
+  border-top: 1px solid #e0e0e0;
+  position: relative;
+}
+
+/* Mensaje nivel vacío */
+.empty-level-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #999;
+  font-style: italic;
+  font-size: 14px;
+  background-color: #f9f9f9;
+}
+
+/* Estilos mejorados para vista 2D - Clean Professional Design */
+.oxxo-shelf-container {
+  padding: 5px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+.oxxo-shelf {
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 2px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  width: 100%;
+}
+
+.shelf-title {
+  text-align: center;
+  color: #333333;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 5px 0;
+  margin-bottom: 5px;
+  background-color: #f7f7f7;
+  border-radius: 2px;
+  border: 1px solid #e0e0e0;
+}
+
+.shelf-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  position: relative;
+  padding: 1px;
+  background-color: white;
+  border-radius: 2px;
+}
+
+.shelf-level {
+  display: flex;
+  background-color: #f9f9f9;
+  border-radius: 1px;
+  height: 85px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.02);
+  margin-bottom: 1px;
+  border: 1px solid #f0f0f0;
+}
+
+.level-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  background-color: #f0f0f0;
+  color: #333;
+  font-weight: bold;
+  font-size: 10px;
+  border-right: 1px solid #e0e0e0;
+}
+
+/* Contenedor de productos ultracompacto */
+.products-container.compact-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 1px 2px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Ocultar scrollbar para Firefox */
+  -ms-overflow-style: none; /* Ocultar scrollbar para IE/Edge */
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;
+  background-color: white;
+  height: 100%;
+}
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.products-container.compact-view::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+
+.shelf-product.compact {
+  flex: 0 0 auto;
+  height: 75px;
+  width: 60px;
+  min-width: 60px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+  position: relative;
+  background-color: transparent;
+}
+
+.shelf-product.compact:hover {
+  transform: translateY(-2px) scale(1.05);
+  z-index: 5;
+}
+
+.shelf-product.compact .product-image-realistic {
+  width: 90%;
+  height: 90%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.shelf-product.compact .product-placeholder {
+  width: 80%;
+  height: 80%;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 10px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+  color: #666;
+}
+
+.product-code {
+  font-weight: bold;
+  font-size: 10px;
+  color: #555;
+}
+
+.empty-level-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #aaa;
+  font-style: italic;
+  font-size: 12px;
+  background-color: #fbfbfb;
+}
+
+/* Base del estante */
+.shelf-base {
+  height: 8px;
+  background: #f0f0f0;
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Modal 2D content ajustado para mejor visualización */
+.modal-2d-content {
+  width: 98%;
+  max-width: 1400px;
+  height: 90vh;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-2d-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.modal-2d-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-2d-body {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estilos para botones de exportación y notificaciones */
+.export-button {
+  padding: 6px 14px;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  margin-right: 8px;
+}
+
+.export-button:hover {
+  background-color: #45a049;
+}
+
+.export-button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+.export-button-small {
+  padding: 4px 10px;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  margin-right: 8px;
+}
+
+.export-button-small:hover {
+  background-color: #45a049;
+}
+
+.export-button-small:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+.export-notification {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background-color: #f0f8ff;
+  color: #0066cc;
+  font-size: 0.75rem;
+  margin-right: 8px;
+}
+
+.export-notification.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.export-notification.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Modal 2D header with actions */
+.modal-2d-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* Ajustes para el nuevo contenedor más compacto */
+.oxxo-shelf-container {
+  margin: 0 auto !important;
+  max-width: 1400px !important;
+  width: 100% !important;
+}
+
+/* Asegurar que el planograma cabe en su contenedor */
+.modal-2d-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planogram-container {
+  width: auto;
+  max-width: 1400px;
+  height: auto;
+  margin: 0 auto;
+  padding: 10px;
+  background-color: white;
+  position: relative;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.export-info {
+  margin-right: 10px;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.export-info code {
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #e53935;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.header-button-with-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.button-info-text {
+  color: #f5f5f5;
+  font-size: 0.7rem;
+  margin-bottom: 3px;
+}
+
+.button-info-text code {
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 1px 3px;
+  border-radius: 2px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+/* Estilos para el indicador de tienda */
+.tienda-id-indicator {
+  margin-left: 10px;
+  color: #ffffff80;
+  font-weight: normal;
+}
+
+.tienda-id-indicator small {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.store-indicator {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-right: 8px;
+  font-size: 0.8rem;
+}
+
+.store-indicator .material-icons {
+  font-size: 1rem;
+  margin-right: 4px;
+}
+
+/* Header title area with IDs */
+.header-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.ids-debug-info {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #666;
+  padding: 2px 5px;
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  width: fit-content;
+}
+
+.ids-debug-info code {
+  background-color: #e0e0e0;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-family: monospace;
+  color: #333;
+}
+
+/* Tienda ID indicator */
+.tienda-id-indicator {
+  display: inline-block;
+  color: #555;
+}
+
+.tienda-id-indicator small {
+  font-weight: normal;
+}

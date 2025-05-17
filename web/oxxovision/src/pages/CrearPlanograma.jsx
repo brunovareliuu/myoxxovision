@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { obtenerTienda, auth, guardarConfiguracion3D, obtenerConfiguracion3D, eliminarPlanograma } from '../firebase';
+import { obtenerTienda, auth } from '../firebase';
+import { saveStore3DConfiguration, getStore3DConfiguration, deletePlanogram } from '../services/Store3DService';
 import Sidebar from '../components/Sidebar';
 import Store3DEditor from '../components/3d/Store3DEditor';
 import './CrearPlanograma.css';
@@ -22,31 +23,36 @@ const CrearPlanograma = () => {
   const [configExistente, setConfigExistente] = useState(false);
   const navigate = useNavigate();
 
+  // Verificar autenticación y cargar datos
   useEffect(() => {
-    const cargarDatos = async () => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
       try {
         setLoading(true);
         
-        // Obtener datos de la tienda
-        const datosTienda = await obtenerTienda(tiendaId);
-        
-        if (!datosTienda) {
-          setError('No se encontró la tienda solicitada');
+          // Cargar datos de la tienda
+          const tiendaData = await obtenerTienda(tiendaId);
+          if (!tiendaData) {
+            setError("La tienda no existe o no tienes permisos para acceder a ella.");
           setLoading(false);
           return;
         }
         
-        console.log('Datos de tienda cargados:', datosTienda);
-        setTienda(datosTienda);
-        
-        // Intentar obtener la configuración 3D existente
-        const config3d = await obtenerConfiguracion3D(tiendaId);
-        
-        if (config3d && (config3d.shelves.length > 0 || config3d.walls.length > 0)) {
-          console.log('Configuración 3D existente cargada:', config3d);
-          setConfigExistente(true);
-          setStoreData(config3d);
-        }
+          console.log('Datos de tienda cargados:', tiendaData);
+          setTienda(tiendaData);
+          
+          // Cargar configuración 3D existente
+          try {
+            const config3D = await getStore3DConfiguration(tiendaId);
+            if (config3D && (config3D.shelves.length > 0 || config3D.walls.length > 0)) {
+              console.log('Configuración 3D existente cargada:', config3D);
+              setConfigExistente(true);
+              setStoreData(config3D);
+            }
+          } catch (err) {
+            console.error("Error al cargar configuración 3D:", err);
+            // No establecer error, simplemente mantener la configuración por defecto
+          }
         
         // Cargar datos básicos del usuario
         const userId = auth.currentUser?.uid || localStorage.getItem('oxxoUserId');
@@ -59,21 +65,22 @@ const CrearPlanograma = () => {
           rol: userRole
         });
         
+          setLoading(false);
       } catch (err) {
-        console.error('Error al cargar datos:', err);
-        setError('Error al cargar los datos necesarios');
-      } finally {
+          console.error(err);
+          setError("Error al cargar los datos. Intenta de nuevo más tarde.");
         setLoading(false);
       }
-    };
+      } else {
+        // Usuario no autenticado, redirigir al login
+        navigate('/login');
+      }
+    });
     
-    cargarDatos();
-  }, [tiendaId]);
+    return () => unsubscribe();
+  }, [tiendaId, navigate]);
 
-  const handleVolver = () => {
-    navigate(`/tienda/${tiendaId}`);
-  };
-
+  // Manejar cambios en los datos de la tienda 3D
   const handleStoreDataChange = (newStoreData) => {
     // Ensure the data structure is complete
     if (!newStoreData) return;
@@ -96,18 +103,18 @@ const CrearPlanograma = () => {
       // If we have existing configuration, we need to check for deleted planograms
       if (configExistente) {
         // Try to get existing configuration from Firestore
-        const existingConfig = await obtenerConfiguracion3D(tiendaId);
+        const existingConfig = await getStore3DConfiguration(tiendaId);
         if (existingConfig && existingConfig.shelves) {
           // Find IDs of shelves that exist in DB but not in current storeData
           const currentShelfIds = storeData.shelves.map(shelf => shelf.id);
           const deletedShelves = existingConfig.shelves.filter(
             shelf => !currentShelfIds.includes(shelf.id)
           );
-          
+      
           // Delete these shelves from Firestore explicitly
           const deletePromises = deletedShelves.map(shelf => {
             console.log("Eliminando planograma que ya no existe en UI:", shelf.id);
-            return eliminarPlanograma(tiendaId, shelf.id);
+            return deletePlanogram(tiendaId, shelf.id);
           });
           
           if (deletePromises.length > 0) {
@@ -116,8 +123,8 @@ const CrearPlanograma = () => {
         }
       }
       
-      // Guardar configuración en Firebase
-      await guardarConfiguracion3D(tiendaId, storeData);
+      // Guardar configuración usando el nuevo servicio
+      await saveStore3DConfiguration(tiendaId, storeData);
       
       // Mostrar mensaje de éxito
       setSaveSuccess(true);
@@ -129,12 +136,18 @@ const CrearPlanograma = () => {
       if (!configExistente) {
         setConfigExistente(true);
       }
+      
     } catch (error) {
-      console.error('Error al guardar configuración 3D:', error);
-      setError('No se pudo guardar la configuración. Intente nuevamente.');
+      console.error("Error al guardar configuración 3D:", error);
+      setError("Error al guardar: " + error.message);
     } finally {
       setSavingConfig(false);
     }
+  };
+
+  // Manejar navegación de regreso
+  const handleVolver = () => {
+    navigate(`/tienda/${tiendaId}`);
   };
 
   if (loading) {
@@ -176,23 +189,23 @@ const CrearPlanograma = () => {
         <div className="crear-planograma-content">
           {/* Información de la tienda */}
           <div className="planograma-config-section">
-            <div className="tienda-info-banner">
-              <div className="tienda-info">
-                <span className="label">Tienda:</span>
-                <span className="value">{tienda.nombre}</span>
-              </div>
-              <div className="tienda-info">
-                <span className="label">Código:</span>
-                <span className="value">{tienda.codigoTienda}</span>
-              </div>
-              <div className="tienda-info">
-                <span className="label">Ubicación:</span>
-                <span className="value">{tienda.ciudad}, {tienda.estado}</span>
+          <div className="tienda-info-banner">
+            <div className="tienda-info">
+              <span className="label">Tienda:</span>
+              <span className="value">{tienda.nombre}</span>
+            </div>
+            <div className="tienda-info">
+              <span className="label">Código:</span>
+              <span className="value">{tienda.codigoTienda}</span>
+            </div>
+            <div className="tienda-info">
+              <span className="label">Ubicación:</span>
+              <span className="value">{tienda.ciudad}, {tienda.estado}</span>
               </div>
               
               <button 
                 className="action-button save-button" 
-                onClick={handleSaveConfig}
+                onClick={handleSaveConfig} 
                 disabled={savingConfig}
               >
                 {savingConfig ? 'Guardando...' : (configExistente ? 'Actualizar Configuración' : 'Guardar Configuración')}

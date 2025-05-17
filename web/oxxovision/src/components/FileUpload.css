@@ -1,0 +1,124 @@
+.file-upload-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: #f9f9f9;
+  transition: all 0.3s ease;
+}
+
+.file-upload-container:hover {
+  border-color: #e5231b;
+  background-color: #f5f5f5;
+}
+
+.drag-active {
+  border-color: #e5231b;
+  background-color: rgba(229, 35, 27, 0.05);
+}
+
+.file-input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #666;
+  pointer-events: none;
+}
+
+.upload-label svg {
+  fill: #e5231b;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+}
+
+.upload-label p {
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.preview-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.image-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Estilos para botón de eliminar imagen */
+.remove-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  z-index: 2;
+}
+
+.remove-preview:hover {
+  background-color: #e5231b;
+}
+
+/* Loader para cuando se está subiendo */
+.upload-progress {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  bottom: 0;
+  left: 0;
+  background-color: #f0f0f0;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #e5231b;
+  transition: width 0.2s ease;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .file-upload-container {
+    height: 150px;
+  }
+  
+  .upload-label svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+  }
+  
+  .upload-label p {
+    font-size: 12px;
+  }
+} 

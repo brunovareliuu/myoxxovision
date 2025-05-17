@@ -38,6 +38,12 @@ const Sidebar = ({ userData }) => {
       visible: true
     },
     {
+      title: 'Productos',
+      icon: 'inventory_2',
+      path: '/productos',
+      visible: true
+    },
+    {
       title: 'Planogramas',
       icon: 'dashboard_customize',
       path: '/planogramas',
