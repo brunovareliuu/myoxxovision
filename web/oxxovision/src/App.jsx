@@ -10,6 +10,7 @@ import CrearPlanograma from './pages/CrearPlanograma';
 import ProductosPage from './pages/ProductosPage';
 import EditarProducto from './pages/EditarProducto';
 import ImageAnalyzerPage from './pages/ImageAnalyzerPage';
+import InventarioPage from './pages/InventarioPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -72,6 +73,15 @@ function App() {
           element={
             <ProtectedRoute>
               <ProductosPage />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para gestión de inventario */}
+        <Route 
+          path="/inventario" 
+          element={
+            <ProtectedRoute>
+              <InventarioPage />
             </ProtectedRoute>
           } 
         />

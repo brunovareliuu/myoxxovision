@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, logoutUser, getUserData, obtenerProductos } from '../firebase';
+import { actualizarStockTiendas } from '../utils/updateStockUtils';
 import Sidebar from '../components/Sidebar';
 import MisTiendas from '../components/MisTiendas';
 import './Dashboard.css';
@@ -11,6 +12,8 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [productos, setProductos] = useState([]);
   const [loadingProductos, setLoadingProductos] = useState(false);
+  const [actualizandoStock, setActualizandoStock] = useState(false);
+  const [mensajeStock, setMensajeStock] = useState(null);
   const navigate = useNavigate();
 
   // Simplificado - solo cargar datos una vez al iniciar
@@ -100,6 +103,41 @@ const Dashboard = () => {
     cargarProductos();
   }, []);
 
+  // Función para actualizar el stock de productos en tiendas
+  const handleActualizarStock = async () => {
+    try {
+      setActualizandoStock(true);
+      setMensajeStock(null);
+      
+      console.log('Iniciando actualización de stock en tiendas usando la nueva estructura...');
+      const resultado = await actualizarStockTiendas();
+      
+      if (resultado.success) {
+        setMensajeStock({
+          tipo: 'exito',
+          texto: `${resultado.message}: ${resultado.tiendas.length} tiendas actualizadas con estructura mejorada`
+        });
+      } else {
+        setMensajeStock({
+          tipo: 'error',
+          texto: resultado.message
+        });
+      }
+    } catch (error) {
+      console.error('Error al actualizar stock:', error);
+      setMensajeStock({
+        tipo: 'error',
+        texto: `Error al actualizar stock: ${error.message}`
+      });
+    } finally {
+      setActualizandoStock(false);
+      // Ocultar el mensaje después de 5 segundos
+      setTimeout(() => {
+        setMensajeStock(null);
+      }, 5000);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -129,6 +167,10 @@ const Dashboard = () => {
 
   const navigateToImageAnalyzer = () => {
     navigate('/image-analyzer');
+  };
+
+  const navigateToInventario = () => {
+    navigate('/inventario');
   };
 
   if (loading) {
@@ -177,7 +219,28 @@ const Dashboard = () => {
         <div className="dashboard-content">
           <div className="welcome-section">
             <h2>Bienvenido/a, {userName}</h2>
-                          <p>Sistema de Gestión de Planogramas para tiendas OXXO.</p>                            {canManageStores && (                <div className="main-action-buttons">                  <button className="main-action-button" onClick={navigateToRegistroTienda}>                    <span className="material-icons">add_business</span>                    Registrar Nueva Tienda                  </button>                  <button className="main-action-button search-button" onClick={navigateToBusquedaTienda}>                    <span className="material-icons">search</span>                    Buscar Tienda                  </button>                  <button className="main-action-button analyzer-button" onClick={navigateToImageAnalyzer}>                    <span className="material-icons">image_search</span>                    Analizador de Imágenes                  </button>                </div>              )}            </div>
+            <p>Sistema de Gestión de Planogramas para tiendas OXXO.</p>
+            {canManageStores && (
+              <div className="main-action-buttons">
+                <button className="main-action-button" onClick={navigateToRegistroTienda}>
+                  <span className="material-icons">add_business</span>
+                  Registrar Nueva Tienda
+                </button>
+                <button className="main-action-button search-button" onClick={navigateToBusquedaTienda}>
+                  <span className="material-icons">search</span>
+                  Buscar Tienda
+                </button>
+                <button className="main-action-button analyzer-button" onClick={navigateToImageAnalyzer}>
+                  <span className="material-icons">image_search</span>
+                  Analizador de Imágenes
+                </button>
+                <button className="main-action-button inventory-button" onClick={navigateToInventario}>
+                  <span className="material-icons">inventory</span>
+                  Gestionar Inventario
+                </button>
+              </div>
+            )}
+          </div>
           
           {/* Sección de Mis Tiendas */}
           <MisTiendas />
@@ -250,6 +313,11 @@ const Dashboard = () => {
                 <h4>Gestionar Productos</h4>
                 <p>Administrar catálogo de productos</p>
               </div>
+              <div className="action-card highlight" onClick={navigateToInventario}>
+                <span className="material-icons">inventory</span>
+                <h4>Gestionar Inventario</h4>
+                <p>Administrar stock de productos en tiendas</p>
+              </div>
             </div>
           </div>
           
@@ -267,7 +335,25 @@ const Dashboard = () => {
                   <h4>Permisos</h4>
                   <p>Administrar roles y permisos</p>
                 </div>
+                <div 
+                  className={`admin-card ${actualizandoStock ? 'disabled' : ''}`}
+                  onClick={actualizandoStock ? null : handleActualizarStock}
+                >
+                  <span className="material-icons">inventory</span>
+                  <h4>Actualizar Stock</h4>
+                  <p>Generar stock ficticio para todos los productos en tiendas</p>
+                  {actualizandoStock && <div className="mini-spinner"></div>}
+                </div>
               </div>
+              
+              {mensajeStock && (
+                <div className={`mensaje-stock ${mensajeStock.tipo}`}>
+                  <span className="material-icons">
+                    {mensajeStock.tipo === 'exito' ? 'check_circle' : 'error'}
+                  </span>
+                  {mensajeStock.texto}
+                </div>
+              )}
             </div>
           )}
         </div>

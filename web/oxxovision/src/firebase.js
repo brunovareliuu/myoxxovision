@@ -197,6 +197,11 @@ export const verificarCodigoTienda = async (codigo) => {
   }
 };
 
+// Función que genera un stock aleatorio
+const generarStockAleatorio = (min = 5, max = 50) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
 // Función para registrar una nueva tienda OXXO
 export const registrarTienda = async (datosTienda) => {
   try {
@@ -225,18 +230,51 @@ export const registrarTienda = async (datosTienda) => {
       codigoExiste = await verificarCodigoTienda(codigoTienda);
     }
     
-    // Añadir el código y gerente a los datos de la tienda
+    // Obtener todos los productos para generar inventario
+    const productosRef = collection(db, "productos");
+    const productosSnapshot = await getDocs(productosRef);
+    
+    // Crear objeto de inventario con stock aleatorio para cada producto
+    const inventarioProductos = {};
+    let cantidadProductos = 0;
+    
+    productosSnapshot.forEach((doc) => {
+      const producto = {
+        id: doc.id,
+        ...doc.data()
+      };
+      
+      // Generar stock aleatorio para este producto
+      const stockAleatorio = generarStockAleatorio(5, 50);
+      
+      // Simplificar el inventario: solo nombre, precio, productoId y stock
+      inventarioProductos[producto.id] = {
+        productoId: producto.id,
+        nombre: producto.nombre,
+        precio: producto.precio || 0,
+        stock: stockAleatorio
+      };
+      
+      cantidadProductos++;
+    });
+    
+    // Añadir el código, gerente e inventario a los datos de la tienda
     const tiendaCompleta = {
       ...datosTienda,
       codigoTienda,
       fechaRegistro: serverTimestamp(),
       creadoPor: currentUser.uid,
-      gerente: gerente // Añadir la información del gerente
+      gerente: gerente, // Añadir la información del gerente
+      inventarioProductos: inventarioProductos, // Añadir inventario con stock
+      tieneInventario: cantidadProductos > 0,
+      cantidadProductos: cantidadProductos,
+      ultimaActualizacionInventario: new Date().toISOString()
     };
     
     // Agregar la tienda a Firestore
     const docRef = await addDoc(collection(db, "tiendas"), tiendaCompleta);
     console.log("Tienda registrada con ID:", docRef.id);
+    console.log(`Stock generado para ${cantidadProductos} productos`);
     
     return {
       id: docRef.id,

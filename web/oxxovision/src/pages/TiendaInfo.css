@@ -789,4 +789,44 @@ a img, button img {
 
 .edit-planogram-button .material-icons {
   font-size: 16px;
+}
+
+/* Inventario */
+.inventario-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.inventario-info {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.ver-inventario-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  background-color: #0c2340;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  gap: 8px;
+}
+
+.ver-inventario-button:hover {
+  background-color: #193b68;
+}
+
+.ver-inventario-button .material-icons {
+  font-size: 18px;
 } 

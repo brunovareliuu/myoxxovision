@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerTienda, auth } from '../firebase';
 import Sidebar from '../components/Sidebar';
 import Store3D from '../components/3d/Store3D';
+import InventarioTienda from '../components/InventarioTienda';
 import { getStore3DConfiguration } from '../services/Store3DService';
+import { verificarInventarioTienda } from '../utils/updateStockUtils';
 import './TiendaInfo.css';
 
 // Función para generar colores aleatorios para los productos
@@ -77,6 +79,8 @@ const TiendaInfo = () => {
     products: []
   });
   const [loadingStore3D, setLoadingStore3D] = useState(true);
+  const [showInventarioModal, setShowInventarioModal] = useState(false);
+  const [tieneInventario, setTieneInventario] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -95,6 +99,10 @@ const TiendaInfo = () => {
         
         console.log('Datos de tienda cargados:', datosTienda);
         setTienda(datosTienda);
+        
+        // Verificar si la tienda tiene inventario
+        const tieneInv = await verificarInventarioTienda(tiendaId);
+        setTieneInventario(tieneInv);
         
         // Cargar configuración 3D de la tienda
         try {
@@ -145,6 +153,10 @@ const TiendaInfo = () => {
   const handleVerPlanograma = (planogramaId) => {
     // Navegar a la página de visualización de planogramas con el ID del planograma
     navigate(`/planogramas/crear/${tiendaId}?planogramaId=${planogramaId}`);
+  };
+  
+  const toggleInventarioModal = () => {
+    setShowInventarioModal(!showInventarioModal);
   };
 
   if (loading) {
@@ -258,6 +270,30 @@ const TiendaInfo = () => {
                 ) : (
                   <p className="no-data">No hay información del gerente disponible</p>
                 )}
+              </div>
+            </div>
+            
+            <div className="tienda-details-section">
+              <h3>
+                <span className="material-icons">inventory</span>
+                Inventario de Productos
+              </h3>
+              
+              <div className="inventario-container">
+                <p className="inventario-info">
+                  {tieneInventario 
+                    ? "Esta tienda tiene inventario de productos con stock configurado."
+                    : "Esta tienda no tiene inventario de productos configurado."
+                  }
+                </p>
+                
+                <button 
+                  className="ver-inventario-button"
+                  onClick={toggleInventarioModal}
+                >
+                  <span className="material-icons">visibility</span>
+                  {tieneInventario ? "Ver y editar inventario" : "Configurar inventario"}
+                </button>
               </div>
             </div>
             
@@ -498,6 +534,17 @@ const TiendaInfo = () => {
           </div>
         </div>
       </div>
+      
+      {/* Modal para gestión de inventario */}
+      {showInventarioModal && (
+        <>
+          <div className="inventory-modal-overlay" onClick={toggleInventarioModal}></div>
+          <InventarioTienda 
+            tiendaId={tiendaId} 
+            onClose={toggleInventarioModal} 
+          />
+        </>
+      )}
     </div>
   );
 };
