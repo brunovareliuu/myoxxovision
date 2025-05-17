@@ -26,6 +26,21 @@ service cloud.firestore {
               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'gerente');
     }
     
+    // Función para verificar si un usuario es empleado de una tienda específica
+    function isStoreEmployee(tiendaId) {
+      return isAuth() && 
+             exists(/databases/$(database)/documents/tiendas/$(tiendaId)/empleados/$(request.auth.uid));
+    }
+    
+    // Función para verificar si un usuario puede modificar una tienda
+    function canModifyStore(tiendaId) {
+      return isAuth() && (
+        isAdmin() || 
+        isManagerOrAdmin() || 
+        isStoreEmployee(tiendaId)
+      );
+    }
+    
     // Reglas para la colección de usuarios
     match /users/{userId} {
       // Los usuarios pueden leer y actualizar solo sus propios datos
@@ -35,8 +50,8 @@ service cloud.firestore {
       // Solo el propio usuario puede actualizar sus datos
       allow update: if isOwner(userId);
       
-      // Solo el sistema de autenticación o un administrador puede crear nuevos usuarios
-      allow create: if isOwner(userId) || isAdmin();
+      // Permitir la creación inicial durante el signup
+      allow create: if isAuth() && request.auth.uid == userId;
       
       // Solo un administrador puede eliminar usuarios
       allow delete: if isAdmin();
@@ -62,34 +77,108 @@ service cloud.firestore {
       // Cualquier usuario autenticado puede leer las tiendas
       allow read: if isAuth();
       
-      // Temporalmente permitir que cualquier usuario autenticado cree tiendas
-      // Comentamos la validación temporalmente para permitir pruebas
-      allow create: if isAuth(); // && validarDatosTienda(request.resource.data);
-      
-      // Solo administradores y gerentes pueden actualizar o eliminar tiendas
+      // Solo administradores y gerentes pueden crear, actualizar o eliminar tiendas
+      allow create: if isManagerOrAdmin();
       allow update: if isManagerOrAdmin();
       allow delete: if isAdmin();
+
+      // Reglas para la subcolección de empleados
+      match /empleados/{empleadoId} {
+        // Cualquier usuario autenticado puede leer
+        allow read: if isAuth();
+        
+        // Permitir la creación inicial durante el signup
+        allow create: if isAuth() && request.auth.uid == empleadoId && 
+                     request.resource.data.keys().hasAll(['email', 'nombre', 'uid', 'codigoTienda', 'createdAt', 'activo']);
+        
+        // Solo el propio empleado o un admin puede actualizar
+        allow update: if isAuth() && (request.auth.uid == empleadoId || isAdmin());
+        
+        // Solo admin puede eliminar
+        allow delete: if isAdmin();
+      }
+      
+      // Reglas para la configuración 3D de la tienda
+      match /config3d/{configId} {
+        // Cualquier usuario autenticado puede leer la configuración
+        allow read: if isAuth();
+        
+        // Solo administradores, gerentes o empleados de la tienda pueden modificar la configuración
+        allow create, update: if canModifyStore(tiendaId);
+        
+        // Solo administradores pueden eliminar la configuración
+        allow delete: if isAdmin();
+      }
+      
+      // Reglas para la colección de planogramas (estantes)
+      match /planogramas/{planogramaId} {
+        // Función para validar datos de planograma
+        function validarDatosPlanograma(data) {
+          return data.nombre is string && data.nombre.size() > 0 &&
+                 data.creadoPor is string;
+        }
+        
+        // Cualquier usuario autenticado puede leer los planogramas
+        allow read: if isAuth();
+        
+        // Solo administradores, gerentes o empleados de la tienda pueden crear/actualizar planogramas
+        allow create: if canModifyStore(tiendaId) && validarDatosPlanograma(request.resource.data);
+        allow update: if canModifyStore(tiendaId);
+        
+        // Solo administradores pueden eliminar planogramas
+        allow delete: if isAdmin();
+        
+        // Reglas para la subcolección de productos dentro de cada planograma
+        match /productos/{productoId} {
+          allow read: if isAuth();
+          allow create, update: if canModifyStore(tiendaId);
+          allow delete: if canModifyStore(tiendaId);
+        }
+      }
     }
     
     // Reglas para la colección de productos
     match /productos/{productId} {
-      // Permitir lectura pública de los productos
       allow read: if true;
-      // Permitir escritura temporal para cargar los productos
-      allow write: if true; // TEMPORAL: cambiar después de la carga inicial
+      allow write: if isManagerOrAdmin();
     }
     
     // Reglas para otras colecciones (ejemplo)
     match /ventas/{docId} {
-      // Reglas para la colección de ventas (como ejemplo)
       allow read: if isAuth();
       allow write: if isAuth();
     }
 
-    // Reglas para la colección de inventario (como ejemplo)
+    // Reglas para la colección de inventario
     match /inventario/{docId} {
       allow read: if isAuth();
-      allow write: if isAuth() && (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'gerente');
+      allow write: if isManagerOrAdmin();
+    }
+
+    // REGLAS ESPECIALES PARA SIGNUP Y ACCESO GENERAL
+    
+    // Regla general para permitir lectura de tiendas durante signup y operación normal
+    match /{path=**}/tiendas/{tiendaId} {
+      allow read: if request.auth != null;
+    }
+
+    // Regla especial para la creación inicial de usuarios
+    match /users/{userId} {
+      allow create: if request.auth != null && 
+                   request.auth.uid == userId &&
+                   request.resource.data.keys().hasAll(['email', 'nombre', 'uid', 'codigoTienda', 'createdAt', 'activo']);
+    }
+
+    // Regla especial para la subcolección de empleados durante signup
+    match /tiendas/{tiendaId}/empleados/{empleadoId} {
+      allow create: if request.auth != null && 
+                   request.auth.uid == empleadoId;
+    }
+
+    // Regla adicional para asegurar acceso durante signup
+    match /tiendas/{tiendaId}/empleados/{empleadoId} {
+      allow write: if request.auth != null && request.auth.uid == empleadoId;
+      allow read: if request.auth != null;
     }
   }
-} 
+}

@@ -53,9 +53,8 @@ const MisTiendas = () => {
   }, []);
 
   const handleVerDetalle = (tiendaId) => {
-    // Navegar a la página de detalle de tienda (pendiente de implementar)
-    // navigate(`/tienda/${tiendaId}`);
-    console.log(`Ver detalle de tienda: ${tiendaId}`);
+    // Navegar a la página de detalle de tienda
+    navigate(`/tienda/${tiendaId}`);
   };
 
   if (loading) {

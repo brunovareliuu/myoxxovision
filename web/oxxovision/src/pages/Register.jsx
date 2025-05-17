@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../firebase';
 import './Auth.css';
 import oxxoImage from '../assets/oxxo1.png';
+import logo from '../assets/logo.svg';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -66,7 +67,7 @@ const Register = () => {
       <div className="auth-form-section">
         <div className="auth-card">
           <div className="auth-brand">
-            <h1>OXXO<span>Vision</span></h1>
+            <img src={logo} style={{ width: '100px', height: '100px' }} alt="OXXO Vision" className="auth-image" />
           </div>
           <h2>Registro</h2>
           {error && <p className="error-message">{error}</p>}

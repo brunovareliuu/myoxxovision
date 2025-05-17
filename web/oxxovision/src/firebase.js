@@ -340,4 +340,290 @@ export const eliminarTienda = async (tiendaId) => {
   }
 };
 
+// Función para guardar la configuración 3D de la tienda
+export const guardarConfiguracion3D = async (tiendaId, configData) => {
+  try {
+    // Verificar que el usuario esté autenticado
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No hay un usuario autenticado.");
+    }
+    
+    // Verificar si la tienda existe
+    const tiendaRef = doc(db, "tiendas", tiendaId);
+    const tiendaDoc = await getDoc(tiendaRef);
+    
+    if (!tiendaDoc.exists()) {
+      throw new Error("La tienda no existe.");
+    }
+    
+    // Preparar datos de la configuración 3D
+    const configToSave = {
+      storeSize: configData.storeSize || 20,
+      walls: configData.walls || [],
+      ultimaModificacion: serverTimestamp(),
+      actualizadoPor: currentUser.uid
+    };
+    
+    // Si es una configuración nueva, agregar fecha de creación y creador
+    if (!tiendaDoc.data().config3d) {
+      configToSave.fechaCreacion = serverTimestamp();
+      configToSave.creadoPor = currentUser.uid;
+    }
+    
+    // Actualizar la configuración 3D en la tienda
+    await updateDoc(tiendaRef, {
+      config3d: configToSave,
+      ultimaModificacion: serverTimestamp()
+    });
+    
+    // Guardar planogramas (estantes)
+    if (configData.shelves && configData.shelves.length > 0) {
+      // Guardar cada estante como un planograma
+      for (const shelf of configData.shelves) {
+        await guardarPlanograma(tiendaId, {
+          id: shelf.id,
+          nombre: shelf.name,
+          posicion: shelf.position,
+          tamano: shelf.size,
+          rotacion: shelf.rotation,
+          color: shelf.color,
+          productos: shelf.products || []
+        });
+      }
+    }
+    
+    return tiendaId;
+  } catch (error) {
+    console.error("Error al guardar configuración 3D:", error);
+    throw error;
+  }
+};
+
+// Función para guardar un planograma (estante)
+export const guardarPlanograma = async (tiendaId, planogramaData) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No hay un usuario autenticado.");
+    }
+    
+    // Referencia a la colección de planogramas de la tienda
+    const planogramasRef = collection(db, "tiendas", tiendaId, "planogramas");
+    
+    // Verificar si el planograma ya existe
+    let planogramaRef;
+    if (planogramaData.id) {
+      planogramaRef = doc(planogramasRef, planogramaData.id);
+      
+      // Verificar si el planograma existe
+      const planogramaDoc = await getDoc(planogramaRef);
+      
+      // Datos a guardar
+      const dataToSave = {
+        nombre: planogramaData.nombre,
+        posicion: planogramaData.posicion,
+        tamano: planogramaData.tamano,
+        rotacion: planogramaData.rotacion,
+        color: planogramaData.color,
+        ultimaModificacion: serverTimestamp(),
+        actualizadoPor: currentUser.uid
+      };
+      
+      // Si el planograma existe, actualizarlo
+      if (planogramaDoc.exists()) {
+        await updateDoc(planogramaRef, dataToSave);
+      } else {
+        // Si no existe, crearlo
+        dataToSave.fechaCreacion = serverTimestamp();
+        dataToSave.creadoPor = currentUser.uid;
+        await setDoc(planogramaRef, dataToSave);
+      }
+    } else {
+      // Crear un nuevo planograma
+      const dataToSave = {
+        nombre: planogramaData.nombre,
+        posicion: planogramaData.posicion,
+        tamano: planogramaData.tamano,
+        rotacion: planogramaData.rotacion,
+        color: planogramaData.color,
+        fechaCreacion: serverTimestamp(),
+        ultimaModificacion: serverTimestamp(),
+        creadoPor: currentUser.uid,
+        actualizadoPor: currentUser.uid
+      };
+      
+      // Crear documento con ID automático
+      planogramaRef = await addDoc(planogramasRef, dataToSave);
+    }
+    
+    // Guardar productos del planograma si existen
+    if (planogramaData.productos && planogramaData.productos.length > 0) {
+      const productosRef = collection(planogramaRef, "productos");
+      
+      // Eliminar productos anteriores
+      const productosSnapshot = await getDocs(productosRef);
+      const deletePromises = [];
+      productosSnapshot.forEach((doc) => {
+        deletePromises.push(deleteDoc(doc.ref));
+      });
+      await Promise.all(deletePromises);
+      
+      // Guardar nuevos productos
+      const savePromises = [];
+      for (const producto of planogramaData.productos) {
+        const productoId = producto.id || generateId("producto");
+        savePromises.push(
+          setDoc(doc(productosRef, productoId), {
+            ...producto,
+            fechaCreacion: serverTimestamp()
+          })
+        );
+      }
+      await Promise.all(savePromises);
+    }
+    
+    return planogramaRef.id;
+  } catch (error) {
+    console.error("Error al guardar planograma:", error);
+    throw error;
+  }
+};
+
+// Función para obtener la configuración 3D de una tienda
+export const obtenerConfiguracion3D = async (tiendaId) => {
+  try {
+    const tiendaRef = doc(db, "tiendas", tiendaId);
+    const tiendaDoc = await getDoc(tiendaRef);
+    
+    if (!tiendaDoc.exists()) {
+      throw new Error("La tienda no existe.");
+    }
+    
+    const tiendaData = tiendaDoc.data();
+    
+    // Si no hay configuración 3D, devolver una por defecto
+    if (!tiendaData.config3d) {
+      return {
+        storeSize: 20,
+        walls: [],
+        shelves: [],
+        products: []
+      };
+    }
+    
+    // Obtener todos los planogramas (estantes) de la tienda
+    const planogramasRef = collection(db, "tiendas", tiendaId, "planogramas");
+    const planogramasSnapshot = await getDocs(planogramasRef);
+    
+    const shelves = [];
+    planogramasSnapshot.forEach((doc) => {
+      const planogramaData = doc.data();
+      
+      // Convertir el planograma a formato de estante para el editor 3D
+      shelves.push({
+        id: doc.id,
+        name: planogramaData.nombre,
+        position: planogramaData.posicion,
+        size: planogramaData.tamano,
+        rotation: planogramaData.rotacion,
+        color: planogramaData.color,
+        products: planogramaData.productos || []
+      });
+    });
+    
+    // Construir y devolver la configuración completa
+    return {
+      storeSize: tiendaData.config3d.storeSize || 20,
+      walls: tiendaData.config3d.walls || [],
+      shelves: shelves,
+      products: []
+    };
+  } catch (error) {
+    console.error("Error al obtener configuración 3D:", error);
+    return {
+      storeSize: 20,
+      walls: [],
+      shelves: [],
+      products: []
+    };
+  }
+};
+
+// Función para obtener un planograma específico
+export const obtenerPlanograma = async (tiendaId, planogramaId) => {
+  try {
+    const planogramaDoc = await getDoc(doc(db, "tiendas", tiendaId, "planogramas", planogramaId));
+    
+    if (!planogramaDoc.exists()) {
+      return null;
+    }
+    
+    // Obtener los productos del planograma
+    const productosRef = collection(db, "tiendas", tiendaId, "planogramas", planogramaId, "productos");
+    const productosSnapshot = await getDocs(productosRef);
+    
+    const productos = [];
+    productosSnapshot.forEach((doc) => {
+      productos.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    return {
+      id: planogramaDoc.id,
+      ...planogramaDoc.data(),
+      productos
+    };
+  } catch (error) {
+    console.error("Error al obtener planograma:", error);
+    return null;
+  }
+};
+
+// Función para eliminar un planograma de la tienda
+export const eliminarPlanograma = async (tiendaId, planogramaId) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No hay un usuario autenticado.");
+    }
+    
+    // Referencia al planograma
+    const planogramaRef = doc(db, "tiendas", tiendaId, "planogramas", planogramaId);
+    
+    // Verificar si el planograma existe
+    const planogramaDoc = await getDoc(planogramaRef);
+    
+    if (!planogramaDoc.exists()) {
+      console.warn("El planograma no existe o ya fue eliminado.");
+      return true;
+    }
+    
+    // Primero eliminar los productos del planograma
+    const productosRef = collection(planogramaRef, "productos");
+    const productosSnapshot = await getDocs(productosRef);
+    const deletePromises = [];
+    productosSnapshot.forEach((doc) => {
+      deletePromises.push(deleteDoc(doc.ref));
+    });
+    await Promise.all(deletePromises);
+    
+    // Después eliminar el planograma
+    await deleteDoc(planogramaRef);
+    
+    console.log("Planograma eliminado exitosamente:", planogramaId);
+    return true;
+  } catch (error) {
+    console.error("Error al eliminar planograma:", error);
+    throw error;
+  }
+};
+
+// Función para generar un ID único
+function generateId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+}
+
 export { auth, db };

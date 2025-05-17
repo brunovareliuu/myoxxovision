@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
+import logo from '../assets/logo.svg';
 
 const Sidebar = ({ userData }) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,8 +53,11 @@ const Sidebar = ({ userData }) => {
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="brand">
-          {!collapsed && <h1>OXXO<span>Vision</span></h1>}
-          {collapsed && <h1>O<span>V</span></h1>}
+          {!collapsed ? (
+            <img src={logo} alt="OXXO Vision Logo" className="logo-full" />
+          ) : (
+            <img src={logo} alt="OXXO Vision Logo" className="logo-mini" />
+          )}
         </div>
         <button className="toggle-button" onClick={toggleSidebar}>
           <span className="material-icons">

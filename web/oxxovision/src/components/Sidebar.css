@@ -30,6 +30,23 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.logo-full {
+  height: 35px;
+  width: auto;
+}
+
+.logo-mini {
+  height: 30px;
+  width: auto;
+  max-width: 30px;
+  object-fit: contain;
+}
+
 .brand h1 {
   font-family: 'Montserrat', sans-serif;
   font-size: 20px;

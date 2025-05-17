@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import RegistroTienda from './pages/RegistroTienda';
 import BusquedaTienda from './pages/BusquedaTienda';
+import TiendaInfo from './pages/TiendaInfo';
+import CrearPlanograma from './pages/CrearPlanograma';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -43,6 +45,24 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para crear planogramas */}
+        <Route 
+          path="/planogramas/crear/:tiendaId" 
+          element={
+            <ProtectedRoute>
+              <CrearPlanograma />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para ver detalles de tienda */}
+        <Route 
+          path="/tienda/:tiendaId" 
+          element={
+            <ProtectedRoute>
+              <TiendaInfo />
             </ProtectedRoute>
           } 
         />
