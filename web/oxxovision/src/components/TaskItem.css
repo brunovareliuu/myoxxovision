@@ -1,0 +1,344 @@
+/* TaskItem.css - Estilos para cada ítem de tarea */
+
+.task-item {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  position: relative;
+  border: 1px solid #e0e0e0;
+}
+
+.task-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Indicador de prioridad */
+.priority-indicator {
+  width: 8px;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  padding: 12px 0;
+}
+
+.priority-label {
+  padding: 8px 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Contenido principal */
+.task-content {
+  flex: 1;
+  padding: 16px;
+  min-width: 0; /* Para evitar desbordamiento */
+}
+
+.task-title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.task-description {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #555555;
+  line-height: 1.4;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Detalles y metadatos */
+.task-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.task-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #666666;
+  background-color: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.task-detail-item .material-icons {
+  font-size: 16px;
+  color: #777777;
+}
+
+/* Estilo para tareas no asignadas */
+.task-detail-item.not-assigned {
+  color: #777;
+  font-style: italic;
+}
+
+.task-detail-item.not-assigned .material-icons {
+  color: #aaa;
+}
+
+/* Acciones */
+.task-actions {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 8px;
+  border-left: 1px solid #eeeeee;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.action-button .material-icons {
+  font-size: 18px;
+}
+
+.complete-button {
+  background-color: #e5231b;
+  color: white;
+}
+
+.complete-button:hover {
+  background-color: #c31b15;
+}
+
+.delete-button {
+  background-color: transparent;
+  color: #777777;
+}
+
+.delete-button:hover {
+  background-color: #f0f0f0;
+  color: #e5231b;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .task-item {
+    flex-direction: column;
+  }
+  
+  .priority-indicator {
+    width: 100%;
+    height: 6px;
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 0;
+  }
+  
+  .priority-label {
+    display: none;
+  }
+  
+  .task-actions {
+    flex-direction: row;
+    border-left: none;
+    border-top: 1px solid #eeeeee;
+    width: 100%;
+    padding: 12px 16px;
+  }
+  
+  .action-button {
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .task-actions {
+    flex-direction: column;
+  }
+  
+  .action-button {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Estilos para planograma */
+.task-planogram {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f2f9ff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1565c0;
+  margin-bottom: 10px;
+  width: fit-content;
+}
+
+.task-planogram .material-icons {
+  font-size: 16px;
+  color: #1565c0;
+}
+
+/* Estilos para tiempo límite */
+.tiempo-vencido {
+  background-color: #ffebee !important;
+  color: #c62828 !important;
+}
+
+.tiempo-vencido .material-icons {
+  color: #c62828 !important;
+}
+
+.tiempo-critico {
+  background-color: #fff8e1 !important;
+  color: #ff8f00 !important;
+}
+
+.tiempo-critico .material-icons {
+  color: #ff8f00 !important;
+}
+
+.tiempo-normal {
+  background-color: #e8f5e9 !important;
+  color: #2e7d32 !important;
+}
+
+.tiempo-normal .material-icons {
+  color: #2e7d32 !important;
+}
+
+.tiempo-restante {
+  margin-left: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Estilos para el encabezado de tarea con estado */
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+/* Estilos para el indicador de estado */
+.task-estado {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.task-estado .material-icons {
+  font-size: 14px;
+}
+
+/* Estilos específicos por estado */
+.task-estado-solicitada {
+  border-left-color: #607d8b;
+}
+
+.task-estado-enviada {
+  border-left-color: #ff9800;
+}
+
+.task-estado-completada {
+  border-left-color: #4caf50;
+  opacity: 0.85;
+}
+
+/* Estilos para mensaje de estado */
+.task-status-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  text-align: center;
+  color: #ff9800;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.task-status-message .material-icons {
+  font-size: 24px;
+}
+
+.task-status-message.completed {
+  color: #4caf50;
+}
+
+/* Estilos para los botones de acción */
+.progress-button {
+  background-color: #2196f3;
+  color: white;
+}
+
+.progress-button:hover {
+  background-color: #1976d2;
+}
+
+.send-button {
+  background-color: #ff9800;
+  color: white;
+}
+
+.send-button:hover {
+  background-color: #f57c00;
+}
+
+.reject-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.reject-button:hover {
+  background-color: #d32f2f;
+}
+
+/* Ajuste para botones de acción dentro de enviada */
+.task-estado-enviada .action-button {
+  margin-bottom: 4px;
+} 

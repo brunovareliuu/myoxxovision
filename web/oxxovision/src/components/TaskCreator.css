@@ -1,0 +1,219 @@
+/* TaskCreator.css - Estilos para el creador de tareas */
+
+.task-creator-container {
+  width: 100%;
+}
+
+.task-creator-container h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #333333;
+  font-size: 20px;
+  text-align: center;
+}
+
+.task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-weight: 500;
+  font-size: 14px;
+  color: #555555;
+}
+
+.form-group .required {
+  color: #e5231b;
+  margin-left: 2px;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+  border: 1px solid #d1d1d1;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #e5231b;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(229, 35, 27, 0.1);
+}
+
+.form-group input.error,
+.form-group textarea.error,
+.form-group select.error {
+  border-color: #e5231b;
+  background-color: rgba(229, 35, 27, 0.03);
+}
+
+.error-text {
+  color: #e5231b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: rgba(229, 35, 27, 0.1);
+  border-left: 3px solid #e5231b;
+  color: #e5231b;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.error-message .material-icons {
+  font-size: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-group.half {
+  width: calc(50% - 8px);
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 24px;
+  margin-top: 4px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #e5231b;
+}
+
+.checkbox-item label {
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.cancel-button,
+.submit-button {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.cancel-button {
+  background-color: #f0f0f0;
+  color: #555555;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.submit-button {
+  background-color: #e5231b;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-button:hover {
+  background-color: #c31b15;
+}
+
+.submit-button:disabled,
+.cancel-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estilo para dispositivos móviles */
+@media (max-width: 576px) {
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .form-group.half {
+    width: 100%;
+  }
+  
+  .checkbox-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Estilos para el selector de empleados con grupos */
+.employee-select {
+  padding: 12px 15px;
+  font-size: 14px;
+  max-height: 300px;
+}
+
+.employee-select optgroup {
+  font-weight: 600;
+  font-style: normal;
+  color: #555;
+  padding-top: 5px;
+  background-color: #f9f9f9;
+}
+
+.employee-select option {
+  padding: 8px 10px;
+  font-weight: normal;
+}
+
+.employee-select option:first-child,
+.employee-select option:nth-child(2) {
+  font-weight: 500;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 5px;
+  padding-bottom: 8px;
+} 

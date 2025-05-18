@@ -13,6 +13,12 @@ service firebase.storage {
       allow write: if request.auth != null; // Solo autenticados pueden escribir
     }
     
+    // Regla especial para carpeta de análisis de imágenes
+    match /image_analysis/{fileName} {
+      allow read: if true; // Acceso público para lectura
+      allow write: if true; // Permitir escritura pública para pruebas
+    }
+    
     // Configuración específica para CORS y acceso desde la aplicación
     match /{imageFile=**} {
       allow read: if 

@@ -1,3 +1,4 @@
 functions-framework==3.3.0
 Pillow==9.5.0
-requests==2.31.0 
+requests==2.31.0
+google-cloud-vision==3.7.1 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { loginUser, getUserData } from '../firebase';
+import { loginUser, getUserData, verificarTareasAutomaticasSiNecesario } from '../firebase';
 import './Auth.css';
 import oxxoImage from '../assets/oxxo1.png';
 import logo from '../assets/logo.svg';
@@ -35,6 +35,21 @@ const Login = () => {
       } catch (firestoreErr) {
         console.error('Error al obtener datos de usuario:', firestoreErr);
         // Continuar con el inicio de sesión aunque falle Firestore
+      }
+      
+      // Verificar y generar tareas automáticas al iniciar sesión
+      try {
+        // Solo administradores y supervisores verifican tareas al iniciar sesión
+        const userRole = localStorage.getItem('oxxoUserRole');
+        if (userRole === 'admin' || userRole === 'supervisor') {
+          console.log('Verificando tareas automáticas después del inicio de sesión...');
+          verificarTareasAutomaticasSiNecesario().catch(err => {
+            console.error('Error al verificar tareas automáticas:', err);
+          });
+        }
+      } catch (verificationErr) {
+        console.error('Error al verificar tareas automáticas:', verificationErr);
+        // No interrumpir inicio de sesión si hay error
       }
       
       // Login exitoso, redirigir al dashboard

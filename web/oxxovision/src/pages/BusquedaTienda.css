@@ -41,8 +41,8 @@
 
 .busqueda-tienda-content {
   padding: 30px;
-  max-width: 900px;
   margin: 0 auto;
+  width: 100% !important;
 }
 
 .search-container {
@@ -260,7 +260,98 @@
   font-size: 18px;
 }
 
-/* Responsividad */
+/* Estilos para la sección de tiendas disponibles */
+.tiendas-recientes {
+  margin-top: 30px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 30px;
+}
+
+.tiendas-recientes h3 {
+  color: #333;
+  font-size: 18px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.tiendas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.tienda-card-small {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #eee;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.tienda-card-small:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: #e5231b;
+}
+
+.tienda-card-header {
+  margin-bottom: 10px;
+}
+
+.tienda-codigo-small {
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tienda-nombre-small {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 8px 0;
+  color: #333;
+}
+
+.tienda-direccion-small {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tienda-card-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #e5231b;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: auto;
+}
+
+.tienda-card-action .material-icons {
+  font-size: 16px;
+}
+
+.no-tiendas {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 30px;
+  color: #888;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+/* Ajustes responsivos */
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
@@ -282,5 +373,15 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+  
+  .tiendas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .tiendas-grid {
+    grid-template-columns: 1fr;
   }
 } 

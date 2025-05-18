@@ -1,0 +1,335 @@
+/* TasksPage.css - Estilos para la página de tareas */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* Estructura con sidebar - Usando el mismo layout que Dashboard */
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100% !important;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  position: relative;
+  width: 100% !important;
+}
+
+.sidebar.collapsed + .main-content {
+  margin-left: 70px;
+}
+
+.content-header {
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 18px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.content-header h1 {
+  color: #333;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.dashboard-content {
+  padding: 30px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.store-info h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: #e5231b; /* Rojo Oxxo */
+}
+
+.store-details {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: #666666;
+}
+
+.store-code {
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.tasks-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.create-task-button, .schedule-tasks-button {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-task-button {
+  background-color: #2196f3;
+  color: white;
+}
+
+.schedule-tasks-button {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.create-task-button:hover {
+  background-color: #1976d2;
+}
+
+.schedule-tasks-button:hover {
+  background-color: #7b1fa2;
+}
+
+.create-task-button .material-icons, .schedule-tasks-button .material-icons {
+  margin-right: 8px;
+}
+
+/* Pestañas */
+.tasks-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: #e5231b;
+  background-color: rgba(229, 35, 27, 0.05);
+}
+
+.tab-button.active {
+  color: #e5231b;
+  border-bottom-color: #e5231b;
+  font-weight: bold;
+}
+
+.tab-button.view-detailed {
+  margin-left: auto;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border: none;
+}
+
+.tab-button.view-detailed:hover {
+  background-color: #388E3C;
+  color: white;
+}
+
+.tab-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+  padding: 20px;
+}
+
+/* Pantalla de carga */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 20px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(229, 35, 27, 0.1);
+  border-left-color: #e5231b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mensaje de error */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  gap: 16px;
+}
+
+.error-container .material-icons {
+  font-size: 48px;
+  color: #e5231b;
+}
+
+.error-container h3 {
+  margin: 0;
+  font-size: 24px;
+  color: #e5231b;
+}
+
+.error-container p {
+  max-width: 600px;
+  margin: 0 0 20px 0;
+  color: #666666;
+}
+
+.error-container button {
+  background-color: #e5231b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Estilos para modales */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: auto;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.schedule-config-modal {
+  max-width: 1000px;
+  width: 95%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.close-modal-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  z-index: 10;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding-top: 60px;
+  }
+  
+  .content-header {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .dashboard-content {
+    padding: 12px;
+  }
+  
+  .tasks-actions {
+    width: 100%;
+  }
+  
+  .create-task-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .tasks-tabs {
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+  
+  .tab-content {
+    padding: 15px;
+  }
+}
+
+/* Test tab styling */
+.test-tab {
+  background-color: #673ab7;
+  color: white;
+}
+
+.test-tab:hover {
+  background-color: #5e35b1;
+}
+
+.test-tab.active {
+  background-color: #512da8;
+  color: white;
+  box-shadow: 0 -2px 0 #311b92 inset;
+}
+
+.tab-error {
+  padding: 20px;
+  text-align: center;
+  color: #555;
+}
+
+.tab-error p {
+  font-size: 16px;
+  margin: 0;
+} 

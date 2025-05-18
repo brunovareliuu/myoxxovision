@@ -1,0 +1,405 @@
+.task-schedule-config-container {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.task-schedule-config-container .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+}
+
+.task-schedule-config-container .header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.task-schedule-config-container .close-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.task-schedule-config-container .close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para la lista de configuraciones */
+.configs-list {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.configs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.configs-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #444;
+}
+
+.add-config-button, .generate-now-button {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.add-config-button {
+  background-color: #2196f3;
+  color: white;
+  margin-left: auto;
+  margin-right: 0.5rem;
+}
+
+.generate-now-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.add-config-button:hover {
+  background-color: #1976d2;
+}
+
+.generate-now-button:hover {
+  background-color: #3d8b40;
+}
+
+.add-config-button:disabled, .generate-now-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-config-button .material-icons, .generate-now-button .material-icons {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Tabla de configuraciones */
+.configs-table {
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.configs-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.configs-table th {
+  background-color: #f5f5f5;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: #555;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.configs-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.configs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.configs-table tr.activa {
+  background-color: #f0f8ff;
+}
+
+.configs-table tr.inactiva {
+  background-color: #f5f5f5;
+  color: #888;
+}
+
+.configs-table .acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.configs-table .edit-button, .configs-table .delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.configs-table .edit-button {
+  color: #2196f3;
+}
+
+.configs-table .delete-button {
+  color: #f44336;
+}
+
+.configs-table .edit-button:hover {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.configs-table .delete-button:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* Mensaje cuando no hay configuraciones */
+.no-configs-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #666;
+}
+
+.no-configs-message p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+/* Estilos para el formulario */
+.config-form-container {
+  flex-grow: 1;
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+}
+
+.config-form-container h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #444;
+  font-size: 1.2rem;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-section {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 1rem;
+  background: #f9f9f9;
+}
+
+.form-section h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #555;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.form-group input[type="text"],
+.form-group input[type="time"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.form-group select {
+  background-color: white;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group.half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-item label {
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
+.input-help {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.cancel-button, .submit-button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button {
+  background-color: #e0e0e0;
+  color: #444;
+}
+
+.submit-button {
+  background-color: #2196f3;
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.cancel-button:hover {
+  background-color: #d0d0d0;
+}
+
+.submit-button:hover {
+  background-color: #1976d2;
+}
+
+.cancel-button:disabled, .submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Estilos para mensajes de error */
+.error-message {
+  background-color: #ffebee;
+  color: #d32f2f;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.error-message .material-icons {
+  margin-right: 0.5rem;
+}
+
+.error-message button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+}
+
+/* Estilos para indicador de carga */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #2196f3;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.required {
+  color: #f44336;
+  margin-left: 2px;
+} 

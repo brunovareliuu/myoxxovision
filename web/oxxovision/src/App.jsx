@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import './App.css';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -11,9 +12,40 @@ import ProductosPage from './pages/ProductosPage';
 import EditarProducto from './pages/EditarProducto';
 import ImageAnalyzerPage from './pages/ImageAnalyzerPage';
 import InventarioPage from './pages/InventarioPage';
+import PlanogramasPage from './pages/TasksPage';
+import OxxoAssistant from './pages/OxxoAssistant';
+import OCRPage from './pages/OCRPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { verificarTareasAutomaticasSiNecesario } from './firebase';
 
 function App() {
+  // Verificar y generar tareas automáticas cuando la aplicación inicia
+  useEffect(() => {
+    const verificarTareas = async () => {
+      try {
+        console.log('Verificando tareas automáticas al iniciar...');
+        const tareasGeneradas = await verificarTareasAutomaticasSiNecesario();
+        
+        if (tareasGeneradas > 0) {
+          console.log(`Se generaron ${tareasGeneradas} tareas automáticas`);
+        }
+      } catch (err) {
+        console.error('Error al verificar tareas automáticas:', err);
+      }
+    };
+    
+    // Ejecutar verificación
+    verificarTareas();
+    
+    // Programar verificación periódica cada 15 segundos para pruebas
+    const intervalo = setInterval(() => {
+      verificarTareas();
+    }, 15000); // 15 segundos en milisegundos
+    
+    // Limpiar intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalo);
+  }, []);
+
   return (
     <Router>
       <Routes>
@@ -85,7 +117,24 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        {/* Ruta para planogramas (pendiente de implementar) */}
+        {/* Rutas para solicitudes de fotos */}
+        <Route 
+          path="/fotos-planogramas" 
+          element={
+            <ProtectedRoute>
+              <BusquedaTienda redirectPath="/fotos-planogramas" />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/fotos-planogramas/:tiendaId" 
+          element={
+            <ProtectedRoute>
+              <PlanogramasPage />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para planogramas */}
         <Route 
           path="/planogramas" 
           element={
@@ -118,6 +167,24 @@ function App() {
           element={
             <ProtectedRoute>
               <ImageAnalyzerPage />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para el asistente OXXO Vision */}
+        <Route 
+          path="/assistant" 
+          element={
+            <ProtectedRoute>
+              <OxxoAssistant />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para la detección OCR de planogramas */}
+        <Route 
+          path="/ocr" 
+          element={
+            <ProtectedRoute>
+              <OCRPage />
             </ProtectedRoute>
           } 
         />

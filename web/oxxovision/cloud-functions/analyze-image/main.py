@@ -5,6 +5,10 @@ from PIL import Image
 import io
 import hashlib
 import time
+from google.cloud import vision
+
+# Cliente de Vision API
+vision_client = vision.ImageAnnotatorClient()
 
 @functions_framework.http
 def analyze_image(request: Request):
@@ -80,9 +84,54 @@ def analyze_image(request: Request):
             'description': 'Server error processing request'
         }), 500, headers)
 
+def detect_objects(image_data):
+    """
+    Utiliza Google Cloud Vision API para detectar objetos en la imagen
+    """
+    try:
+        # Crear imagen para Cloud Vision
+        image = vision.Image(content=image_data)
+        
+        # Detectar objetos
+        objects_response = vision_client.object_localization(image=image)
+        labels_response = vision_client.label_detection(image=image)
+        
+        # Procesar resultados de detección de objetos
+        detected_objects = []
+        
+        # Obtener objetos localizados
+        if objects_response.localized_object_annotations:
+            for object in objects_response.localized_object_annotations:
+                detected_objects.append({
+                    "name": object.name,
+                    "confidence": object.score,
+                    "type": "object"
+                })
+        
+        # Añadir etiquetas generales como respaldo
+        if len(detected_objects) < 5 and labels_response.label_annotations:
+            for label in labels_response.label_annotations:
+                # Evitar duplicados
+                if not any(obj["name"].lower() == label.description.lower() for obj in detected_objects):
+                    detected_objects.append({
+                        "name": label.description,
+                        "confidence": label.score,
+                        "type": "label"
+                    })
+                    if len(detected_objects) >= 5:
+                        break
+        
+        # Ordenar por confianza
+        detected_objects = sorted(detected_objects, key=lambda x: x["confidence"], reverse=True)
+        
+        return detected_objects[:5]  # Limitar a los 5 objetos con mayor confianza
+    except Exception as e:
+        print(f"Error en detección de objetos: {str(e)}")
+        return []  # Devolver lista vacía en caso de error
+
 def analyze_image_data(image_data):
     """
-    Analiza una imagen en memoria usando Pillow.
+    Analiza una imagen en memoria usando Pillow y Google Cloud Vision.
     """
     try:
         # Crear un objeto de imagen desde los bytes
@@ -216,9 +265,13 @@ def analyze_image_data(image_data):
             elif len(categories) == 4:
                 categories.append({"category": "Visual", "probability": 0.4})
         
+        # Detectar objetos con Vision API
+        detected_objects = detect_objects(image_data)
+                
         return {
             "success": True,
             "predictions": categories[:5],
+            "objects": detected_objects,
             "metadata": {
                 "dimensions": {"width": width, "height": height},
                 "format": format_type,

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, getUserData, obtenerTiendas } from '../firebase';
+import { auth, getUserData, obtenerTiendasGerente } from '../firebase';
 import Sidebar from '../components/Sidebar';
 import './BusquedaTienda.css';
 
-const BusquedaTienda = () => {
+const BusquedaTienda = ({ redirectPath }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tiendas, setTiendas] = useState([]);
@@ -12,6 +12,21 @@ const BusquedaTienda = () => {
   const [tiendaEncontrada, setTiendaEncontrada] = useState(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  // Determinar el título y mensaje según el modo
+  const isTareasMode = redirectPath === '/tareas';
+  const isFotosMode = redirectPath === '/fotos-planogramas';
+  
+  let pageTitle = 'Búsqueda de Mis Tiendas OXXO';
+  let instructions = 'Busca entre las tiendas que has creado.';
+  
+  if (isTareasMode) {
+    pageTitle = 'Seleccionar Mi Tienda para Tareas';
+    instructions = 'Selecciona una de tus tiendas para gestionar sus tareas y actividades.';
+  } else if (isFotosMode) {
+    pageTitle = 'Seleccionar Tienda para Fotos de Planogramas';
+    instructions = 'Selecciona una tienda para gestionar solicitudes de fotos de planogramas.';
+  }
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -25,9 +40,21 @@ const BusquedaTienda = () => {
         const data = await getUserData(user.uid);
         setUserData(data);
         
-        // Cargar todas las tiendas
-        const tiendasData = await obtenerTiendas();
-        setTiendas(tiendasData);
+        // Cargar solo las tiendas creadas por el usuario actual
+        const userId = user.uid || localStorage.getItem('oxxoUserId');
+        const tiendasData = await obtenerTiendasGerente(userId);
+        
+        // Validar que los datos sean correctos
+        const tiendasValidadas = tiendasData.filter(tienda => {
+          // Verificar que la tienda tenga los campos mínimos necesarios
+          if (!tienda || !tienda.nombre || !tienda.codigoTienda) {
+            console.warn("Tienda con datos incompletos:", tienda);
+            return false;
+          }
+          return true;
+        });
+        
+        setTiendas(tiendasValidadas);
       } catch (error) {
         console.error('Error al obtener datos:', error);
         setError('Error al cargar los datos. Por favor, intenta de nuevo.');
@@ -61,6 +88,31 @@ const BusquedaTienda = () => {
     }
   };
 
+  // Manejar la navegación a detalles de tienda
+  const navigateToTiendaDetails = (tiendaId) => {
+    if (redirectPath) {
+      // Si hay una ruta de redirección, usarla
+      navigate(`${redirectPath}/${tiendaId}`);
+    } else {
+      // Ruta de detalles por defecto
+      navigate(`/tienda/${tiendaId}`);
+    }
+  };
+
+  // Obtener icono adecuado según el modo
+  const getActionIcon = () => {
+    if (isTareasMode) return 'assignment';
+    if (isFotosMode) return 'photo_camera';
+    return 'visibility';
+  };
+
+  // Obtener texto de acción según el modo
+  const getActionText = () => {
+    if (isTareasMode) return 'Gestionar Tareas';
+    if (isFotosMode) return 'Gestionar Fotos';
+    return 'Ver Detalles';
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -75,15 +127,15 @@ const BusquedaTienda = () => {
       
       <div className="main-content">
         <header className="content-header">
-          <h1>Búsqueda de Tienda OXXO</h1>
+          <h1>{pageTitle}</h1>
         </header>
         
         <div className="busqueda-tienda-content">
           <div className="search-container">
             <div className="search-form-container">
-              <h2>Buscar Tienda por Código</h2>
+              <h2>Buscar Entre Mis Tiendas</h2>
               <p className="search-instructions">
-                Ingresa el código de la tienda en formato XXX-XXX-XXX para consultar sus detalles.
+                {instructions}
               </p>
               
               {error && <p className="error-message">{error}</p>}
@@ -146,9 +198,12 @@ const BusquedaTienda = () => {
                   </div>
                   
                   <div className="tienda-actions">
-                    <button className="view-details-button">
-                      <span className="material-icons">visibility</span>
-                      Ver Detalles Completos
+                    <button 
+                      className="view-details-button"
+                      onClick={() => navigateToTiendaDetails(tiendaEncontrada.id)}
+                    >
+                      <span className="material-icons">{getActionIcon()}</span>
+                      {getActionText()}
                     </button>
                   </div>
                 </div>
@@ -157,10 +212,56 @@ const BusquedaTienda = () => {
             
             {!tiendaEncontrada && !error && (
               <div className="search-placeholder">
-                <span className="material-icons placeholder-icon">store_search</span>
-                <p>Ingresa un código de tienda para ver sus detalles.</p>
+                <span className="material-icons placeholder-icon">
+                  {isFotosMode ? 'photo_camera' : (isTareasMode ? 'assignment' : 'store_search')}
+                </span>
+                <p>{isFotosMode 
+                  ? 'Busca una tienda para gestionar sus fotos de planogramas.' 
+                  : (isTareasMode 
+                    ? 'Busca una tienda para gestionar sus tareas.' 
+                    : 'Ingresa un código de tienda para ver sus detalles.')}
+                </p>
               </div>
             )}
+          </div>
+          
+          {/* Lista de tiendas del usuario */}
+          <div className="tiendas-recientes">
+            <h3>Mis Tiendas OXXO</h3>
+            <div className="tiendas-grid">
+              {tiendas.length > 0 ? (
+                tiendas.map((tienda) => (
+                  <div 
+                    key={tienda.id} 
+                    className="tienda-card-small"
+                    onClick={() => navigateToTiendaDetails(tienda.id)}
+                  >
+                    <div className="tienda-card-header">
+                      <span className="tienda-codigo-small">{tienda.codigoTienda}</span>
+                    </div>
+                    <h4 className="tienda-nombre-small">{tienda.nombre}</h4>
+                    <p className="tienda-direccion-small">
+                      {tienda.direccion?.calle || tienda.direccion}, {tienda.direccion?.ciudad || tienda.ciudad}
+                    </p>
+                    <div className="tienda-card-action">
+                      <span className="material-icons">{getActionIcon()}</span>
+                      {getActionText()}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-tiendas">
+                  <p>No has creado ninguna tienda todavía.</p>
+                  <button 
+                    className="action-button" 
+                    onClick={() => navigate('/registro-tienda')}
+                  >
+                    <span className="material-icons">add_business</span>
+                    Registrar Nueva Tienda
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

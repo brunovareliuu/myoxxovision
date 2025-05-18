@@ -13,6 +13,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  padding-bottom: 100px;
 }
 
 .content-header {
@@ -167,6 +168,8 @@
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s;
+  height: 50px;
+  max-width: 200px;
 }
 
 .save-button {

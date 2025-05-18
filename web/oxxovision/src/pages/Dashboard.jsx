@@ -173,6 +173,18 @@ const Dashboard = () => {
     navigate('/inventario');
   };
 
+  const navigateToTareas = () => {
+    navigate('/tareas');
+  };
+
+  const navigateToAssistant = () => {
+    navigate('/assistant');
+  };
+
+  const navigateToOCR = () => {
+    navigate('/ocr');
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -230,13 +242,13 @@ const Dashboard = () => {
                   <span className="material-icons">search</span>
                   Buscar Tienda
                 </button>
-                <button className="main-action-button analyzer-button" onClick={navigateToImageAnalyzer}>
-                  <span className="material-icons">image_search</span>
-                  Analizador de Imágenes
-                </button>
                 <button className="main-action-button inventory-button" onClick={navigateToInventario}>
                   <span className="material-icons">inventory</span>
                   Gestionar Inventario
+                </button>
+                <button className="main-action-button ocr-button" onClick={navigateToOCR}>
+                  <span className="material-icons">document_scanner</span>
+                  Verificar Planogramas (OCR)
                 </button>
               </div>
             )}
@@ -318,6 +330,21 @@ const Dashboard = () => {
                 <h4>Gestionar Inventario</h4>
                 <p>Administrar stock de productos en tiendas</p>
               </div>
+              <div className="action-card highlight" onClick={navigateToTareas}>
+                <span className="material-icons">assignment</span>
+                <h4>Gestionar Tareas</h4>
+                <p>Administrar tareas y actividades de las tiendas</p>
+              </div>
+              <div className="action-card highlight ocr-card" onClick={navigateToOCR}>
+                <span className="material-icons">document_scanner</span>
+                <h4>Verificar Planogramas (OCR)</h4>
+                <p>Analizar imágenes de estantes y comparar con planogramas</p>
+              </div>
+              <div className="action-card ai-assistant" onClick={navigateToAssistant}>
+                <span className="material-icons">support_agent</span>
+                <h4>Asistente IA</h4>
+                <p>Consulta información sobre planogramas con inteligencia artificial</p>
+              </div>
             </div>
           </div>
           
@@ -358,12 +385,10 @@ const Dashboard = () => {
           )}
         </div>
         
-        {/* Floating action button for quick store registration */}
-        {canManageStores && (
-          <div className="floating-action-button" onClick={navigateToRegistroTienda}>
-            <span className="material-icons">add_business</span>
-          </div>
-        )}
+        {/* Floating action button for OCR */}
+        <div className="floating-action-button ocr-fab" onClick={navigateToOCR}>
+          <span className="material-icons">document_scanner</span>
+        </div>
       </div>
     </div>
   );

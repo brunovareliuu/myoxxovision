@@ -1,7 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ================== FUNCIONES AUXILIARES ==================
+
+    /* ============ FUNCIONES AUXILIARES ============ */
     function isAuth() {
       return request.auth != null;
     }
@@ -11,83 +12,82 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuth() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'admin';
+      return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    function isManager() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'gerente';
     }
 
     function isManagerOrAdmin() {
-      return isAuth() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'admin' ||
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'gerente');
+      return isAdmin() || isManager();
     }
 
     function isStoreEmployee(tiendaId) {
-      return isAuth() && 
-             exists(/databases/$(database)/documents/tiendas/$(tiendaId)/empleados/$(request.auth.uid));
+      return isAuth() &&
+        exists(/databases/$(database)/documents/tiendas/$(tiendaId)/empleados/$(request.auth.uid));
     }
 
     function canModifyStore(tiendaId) {
-      return isAuth() && (
-        isAdmin() || 
-        isManagerOrAdmin() || 
-        isStoreEmployee(tiendaId)
-      );
+      return isAdmin() || isManagerOrAdmin() || isStoreEmployee(tiendaId);
     }
 
-    // ================== COLECCIÓN PRINCIPAL USERS ==================
+    /* -------- Validaciones de tienda -------- */
+    function validarCodigoTienda(data) {
+      return data.codigoTienda is string &&
+        data.codigoTienda.matches('^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$');
+    }
+
+    function validarDatosTienda(data) {
+      return data.nombre is string && data.nombre.size() > 0 &&
+        data.estado is string && data.estado.size() > 0 &&
+        data.ciudad is string && data.ciudad.size() > 0 &&
+        data.direccion is string && data.direccion.size() > 0 &&
+        validarCodigoTienda(data);
+    }
+
+    /* ============ USERS ============ */
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow update, delete: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      
-      // Permisos especiales para admin
-      allow delete: if isAdmin();
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isAdmin();      // sólo admin borra
     }
 
-    // ================== COLECCIÓN TIENDAS Y SUBCOLECCIONES ==================
+    /* ============ TIENDAS ============ */
     match /tiendas/{tiendaId} {
-      function validarCodigoTienda(data) {
-        return data.codigoTienda is string && 
-               data.codigoTienda.matches('^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$');
-      }
 
-      function validarDatosTienda(data) {
-        return data.nombre is string && data.nombre.size() > 0 &&
-               data.estado is string && data.estado.size() > 0 &&
-               data.ciudad is string && data.ciudad.size() > 0 &&
-               data.direccion is string && data.direccion.size() > 0 &&
-               validarCodigoTienda(data);
-      }
-
-      // Permitir todas las operaciones autenticado para solucionar el error
+      /* Puedes endurecer estas reglas usando canModifyStore() */
       allow read, write: if isAuth();
 
-      // ----------------- SUBCOLECCIÓN EMPLEADOS -----------------
+      /* ---- empleados ---- */
       match /empleados/{empleadoId} {
         allow read: if isAuth();
-        allow create: if request.auth.uid == empleadoId && 
-                      request.resource.data.keys().hasAll(['email', 'nombre', 'uid', 'codigoTienda', 'createdAt', 'activo']);
-        allow update: if (request.auth.uid == empleadoId) || isAdmin();
+        allow create: if request.auth.uid == empleadoId &&
+          request.resource.data.keys()
+            .hasAll(['email', 'nombre', 'uid', 'codigoTienda', 'createdAt', 'activo']);
+        allow update: if request.auth.uid == empleadoId || isAdmin();
         allow delete: if isAdmin();
       }
 
-      // ----------------- SUBCOLECCIÓN USERS (NUEVA) -----------------
+      /* ---- users dentro de tienda ---- */
       match /users/{userId} {
-        allow create, update: if isOwner(userId);
         allow read: if isAuth();
-        allow delete: if false;
+        allow create, update: if isOwner(userId);
+        allow delete: if isAdmin();
       }
 
-      // ----------------- CONFIGURACIÓN 3D -----------------
+      /* ---- config3d ---- */
       match /config3d/{configId} {
         allow read, write: if isAuth();
       }
 
-      // ----------------- PLANOGRAMAS -----------------
+      /* ---- planogramas ---- */
       match /planogramas/{planogramaId} {
-        // Permitir todas las operaciones a usuarios autenticados para planogramas
         allow read, write: if isAuth();
 
         match /productos/{productoId} {
@@ -98,37 +98,61 @@ service cloud.firestore {
           allow read, write: if isAuth();
         }
       }
+
+      /* ---- tasks ---- */
+      match /tasks/{taskId} {
+        allow read, write: if isAuth();
+      }
+      
+      /* ---- solicitudes de fotos ---- */
+      match /solicitudes/{solicitudId} {
+        // Reglas para leer solicitudes
+        allow read: if isAuth() && (isManagerOrAdmin() || isStoreEmployee(tiendaId));
+        
+        // Reglas para crear solicitudes - solo admin y gerentes
+        allow create: if isAuth() && (isManagerOrAdmin() || isAdmin());
+        
+        // Reglas para actualizar solicitudes - todos pueden actualizar para subir fotos
+        allow update: if isAuth() && (
+          // El admin siempre puede actualizar
+          isManagerOrAdmin() || 
+          // Empleados solo pueden completar solicitudes (con fotos)
+          (isStoreEmployee(tiendaId) && 
+            // Solo se permite actualizar ciertos campos limitados
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completada', 'fechaCompletada', 'fotoUrl', 'completadaPor']))
+        );
+        
+        // Solo admin puede eliminar
+        allow delete: if isAuth() && isAdmin();
+      }
     }
 
-    // ================== COLECCIONES GLOBALES ==================
+    /* ============ COLECCIONES GLOBALES ============ */
     match /productos/{productId} {
-      allow read: if true;
+      allow read: if true;          // público
       allow write: if isAuth();
     }
 
     match /ventas/{docId} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+      allow read, write: if isAuth();
     }
 
     match /inventario/{docId} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+      allow read, write: if isAuth();
     }
-    
-    // ================== COLECCIÓN PLANOGRAMAS_IMAGES ==================
+
+    /* ============ PLANOGRAMAS_IMAGES ============ */
     match /planogramas_images/{docId} {
       allow read: if isAuth();
       allow create, update, delete: if isAuth();
     }
 
-    // ================== REGLAS ESPECIALES PARA SIGNUP ==================
-    match /tiendas/{tiendaId}/empleados/{empleadoId} {
-      allow create: if request.auth.uid == empleadoId;
-      allow read: if isAuth();
+    /* ============ IMAGE_ANALYSIS (pública) ============ */
+    match /image_analysis/{docId} {
+      allow read, create, update, delete: if true;
     }
 
-    // ================== REGLA PARA CUALQUIER OPERACIÓN TEMPORAL ==================
+    /* ============ REGLA TEMPORAL (fallback) ============ */
     match /{document=**} {
       allow read, write: if isAuth();
     }

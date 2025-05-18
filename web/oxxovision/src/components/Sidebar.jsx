@@ -44,15 +44,35 @@ const Sidebar = ({ userData }) => {
       visible: true
     },
     {
-      title: 'Planogramas',
-      icon: 'dashboard_customize',
-      path: '/planogramas',
+      title: 'Fotos Planogramas',
+      icon: 'photo_camera',
+      path: '/fotos-planogramas',
+      visible: true
+    },
+    {
+      title: 'Verificar Planogramas',
+      icon: 'document_scanner',
+      path: '/ocr',
+      visible: true
+    },
+    {
+      title: 'Asistente IA',
+      icon: 'support_agent',
+      path: '/assistant',
       visible: true
     }
   ];
 
   const handleNavigation = (path) => {
     navigate(path);
+  };
+
+  // Verificar si estamos en la ruta de fotos de planogramas
+  const isActivePath = (path) => {
+    if (path === '/fotos-planogramas' && location.pathname.startsWith('/fotos-planogramas')) {
+      return true;
+    }
+    return location.pathname === path;
   };
 
   return (
@@ -90,7 +110,7 @@ const Sidebar = ({ userData }) => {
           .map((item, index) => (
             <div 
               key={index}
-              className={`menu-item ${location.pathname === item.path ? 'active' : ''}`}
+              className={`menu-item ${isActivePath(item.path) ? 'active' : ''}`}
               onClick={() => handleNavigation(item.path)}
             >
               <span className="material-icons">{item.icon}</span>

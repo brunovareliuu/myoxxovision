@@ -1,0 +1,277 @@
+/* TaskManager.css - Estilos para el gestor de tareas */
+
+.task-manager-container {
+  padding: 20px;
+}
+
+/* Filtros y búsqueda */
+.task-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-box {
+  position: relative;
+  flex-grow: 1;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 40px;
+  border: 1px solid #d1d1d1;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.search-box input:focus {
+  border-color: #e5231b;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(229, 35, 27, 0.1);
+}
+
+.search-box .material-icons {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777777;
+  font-size: 20px;
+}
+
+.clear-search {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #777777;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-search:hover {
+  background-color: #f0f0f0;
+  color: #e5231b;
+}
+
+.filter-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #d1d1d1;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  min-width: 180px;
+}
+
+.filter-group select:focus {
+  border-color: #e5231b;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(229, 35, 27, 0.1);
+}
+
+/* Lista de tareas */
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Mensaje de no hay tareas */
+.no-tasks-message {
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #666666;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #d1d1d1;
+}
+
+.no-tasks-message .material-icons {
+  font-size: 48px;
+  color: #999999;
+  margin-bottom: 16px;
+}
+
+.no-tasks-message p {
+  font-size: 16px;
+  margin: 0 0 16px 0;
+}
+
+.no-tasks-message .add-task-prompt {
+  font-size: 14px;
+  color: #777777;
+  font-style: italic;
+}
+
+.clear-filters-button {
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  margin-top: 8px;
+  cursor: pointer;
+  color: #555555;
+  transition: all 0.2s;
+}
+
+.clear-filters-button:hover {
+  background-color: #e0e0e0;
+  color: #e5231b;
+}
+
+/* Modal de completar tarea */
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #333333;
+  font-size: 20px;
+}
+
+.modal-content h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #e5231b;
+}
+
+.task-description {
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 3px solid #cccccc;
+}
+
+.task-description p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444444;
+}
+
+.evidencia-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Estilos para el selector de fotos */
+.foto-upload-container {
+  position: relative;
+}
+
+.foto-upload-container input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.foto-upload-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f0f0f0;
+  color: #555555;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: normal;
+  font-size: 14px;
+  width: fit-content;
+}
+
+.foto-upload-button:hover {
+  background-color: #e0e0e0;
+  color: #333333;
+}
+
+.foto-upload-button .material-icons {
+  font-size: 20px;
+}
+
+.foto-preview {
+  margin-top: 16px;
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.foto-preview img {
+  width: 100%;
+  display: block;
+}
+
+.remove-foto {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #e5231b;
+  transition: all 0.2s;
+}
+
+.remove-foto:hover {
+  background-color: white;
+  transform: scale(1.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .task-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    max-width: 100%;
+  }
+  
+  .filter-group {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .filter-group select {
+    width: 100%;
+    min-width: auto;
+  }
+} 

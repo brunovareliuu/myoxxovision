@@ -31,7 +31,6 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
     showWalls: true,
     showSky: true
   });
-  const [configPanelCollapsed, setConfigPanelCollapsed] = useState(false);
   
   // Form states for new shelf (planograma)
   const [newShelf, setNewShelf] = useState({
@@ -240,8 +239,8 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
   
   return (
     <div className="store3d-editor-column">
-      {/* Panel de configuración superior */}
-      <div className={`config-panel ${configPanelCollapsed ? 'collapsed' : 'expanded'}`}>
+      {/* Config panel on the left */}
+      <div className="config-panel">
         <div className="config-header">
           <h3>
             Configuración de Planogramas
@@ -251,233 +250,188 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
               </span>
             )}
           </h3>
-              <div className="view-options">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={viewOptions.autoRotate}
-                    onChange={() => handleViewOptionChange('autoRotate')}
-                  />
-                  Rotación automática
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={viewOptions.showFloor}
-                    onChange={() => handleViewOptionChange('showFloor')}
-                  />
-                  Mostrar piso
-                </label>
+          
+          <div className="view-options">
+            <label className="checkbox-label">
+              <input 
+                type="checkbox" 
+                checked={viewOptions.autoRotate}
+                onChange={() => handleViewOptionChange('autoRotate')}
+              />
+              Rotación
+            </label>
+            <label className="checkbox-label">
+              <input 
+                type="checkbox" 
+                checked={viewOptions.showFloor}
+                onChange={() => handleViewOptionChange('showFloor')}
+              />
+              Piso
+            </label>
           </div>
-              </div>
-              
+        </div>
+        
         <div className="planograma-management">
           <div className="section-header">
             <h4>Planogramas ({storeData.shelves.length})</h4>
             <button 
-              className="action-button add-button"
-              onClick={() => {
-                setIsAddingShelf(!isAddingShelf);
-                if (!isAddingShelf) {
-                  setSelectedShelfId(null);
-                }
-              }}
+              className="add-button"
+              onClick={() => setIsAddingShelf(true)}
+              title="Añadir planograma"
             >
-              {isAddingShelf ? 'Cancelar' : '+ Añadir Planograma'}
-              </button>
-            </div>
+              + Añadir Planograma
+            </button>
+          </div>
           
           <div className="planograma-content">
-            {/* Lista de planogramas */}
-            <div className="planograma-list">
-              {storeData.shelves.length === 0 ? (
-                <div className="empty-state">
-                  <p>No hay planogramas. Añade tu primer planograma con el botón "Añadir Planograma".</p>
-                </div>
-              ) : (
-                storeData.shelves.map(shelf => (
-                  <div 
-                    key={shelf.id}
-                    className={`planograma-item ${selectedShelfId === shelf.id ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedShelfId(shelf.id);
-                      setIsAddingShelf(false);
-                    }}
-                >
-                    <div className="planograma-color" style={{ backgroundColor: shelf.color }}></div>
-                    <div className="planograma-name">{shelf.name}</div>
-                  </div>
-                ))
-              )}
-            </div>
-            
-            {/* Formulario para añadir planograma */}
-            {isAddingShelf && (
+            {isAddingShelf ? (
               <div className="planograma-form">
-                <h5>Añadir nuevo planograma</h5>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Nombre del Planograma</label>
-                    <input 
-                      type="text" 
-                      value={newShelf.name} 
-                      onChange={(e) => setNewShelf({...newShelf, name: e.target.value})}
-                      placeholder="Ej: Bebidas, Abarrotes, etc."
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Color</label>
-                    <input 
-                      type="color" 
-                      value={newShelf.color} 
-                      onChange={(e) => setNewShelf({...newShelf, color: e.target.value})}
-                    />
-                  </div>
+                <div className="form-columns">
+                  <div className="form-column">
+                    <h5>Información Básica</h5>
+                    <div className="form-group">
+                      <label>Nombre</label>
+                      <input 
+                        type="text" 
+                        value={newShelf.name} 
+                        onChange={(e) => setNewShelf({...newShelf, name: e.target.value})}
+                        placeholder="Nombre del planograma"
+                      />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Color</label>
+                        <input 
+                          type="color" 
+                          value={newShelf.color} 
+                          onChange={(e) => setNewShelf({...newShelf, color: e.target.value})}
+                        />
+                      </div>
+                    </div>
                   </div>
                   
-                <div className="form-columns">
                   <div className="form-column">
                     <h5>Dimensiones</h5>
                     <div className="form-row">
-                    <div className="form-group">
-                      <label>Ancho</label>
-                      <input 
-                        type="number" 
-                        value={newShelf.width} 
-                        onChange={(e) => setNewShelf({...newShelf, width: Number(e.target.value)})}
-                        step={0.1}
-                        min={0.1}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Alto</label>
-                      <input 
-                        type="number" 
-                        value={newShelf.height} 
-                        onChange={(e) => setNewShelf({...newShelf, height: Number(e.target.value)})}
-                        step={0.1}
-                        min={0.1}
-                      />
+                      <div className="form-group">
+                        <label>Ancho</label>
+                        <input 
+                          type="number" 
+                          value={newShelf.width} 
+                          onChange={(e) => setNewShelf({...newShelf, width: parseFloat(e.target.value)})}
+                          step="0.1"
+                          min="0.1"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Alto</label>
+                        <input 
+                          type="number" 
+                          value={newShelf.height} 
+                          onChange={(e) => setNewShelf({...newShelf, height: parseFloat(e.target.value)})}
+                          step="0.1"
+                          min="0.1"
+                        />
+                      </div>
                     </div>
                     <div className="form-group">
                       <label>Profundidad</label>
                       <input 
                         type="number" 
                         value={newShelf.depth} 
-                        onChange={(e) => setNewShelf({...newShelf, depth: Number(e.target.value)})}
-                        step={0.1}
-                        min={0.1}
+                        onChange={(e) => setNewShelf({...newShelf, depth: parseFloat(e.target.value)})}
+                        step="0.1"
+                        min="0.1"
                       />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="form-actions">
+                  <button 
+                    className="confirm-button"
+                    onClick={handleAddShelf}
+                  >
+                    Guardar Planograma
+                  </button>
+                  <button 
+                    className="cancel-button"
+                    onClick={() => setIsAddingShelf(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="planograma-list">
+                  {storeData.shelves.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No hay planogramas.<br />Crea uno para empezar.</p>
+                    </div>
+                  ) : (
+                    storeData.shelves.map(shelf => (
+                      <div 
+                        key={shelf.id} 
+                        className={`planograma-item ${shelf.id === selectedShelfId ? 'selected' : ''}`}
+                        onClick={() => handleShelfSelect(shelf.id)}
+                      >
+                        <div className="planograma-color" style={{ backgroundColor: shelf.color }}></div>
+                        <div className="planograma-name">{shelf.name}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                
+                {selectedShelf && (
+                  <div className="planograma-controls">
+                    <h5>Controles de Planograma</h5>
+                    
+                    <div className="controls-container">
+                      <div className="control-section">
+                        <div className="control-label">Mover</div>
+                        <div className="movement-controls">
+                          <button onClick={() => handleUpdateShelfPosition(2, -0.5)}>↑</button>
+                          <button onClick={() => handleUpdateShelfPosition(0, -0.5)}>←</button>
+                          <button onClick={() => handleUpdateShelfPosition(0, 0.5)}>→</button>
+                          <button onClick={() => handleUpdateShelfPosition(2, 0.5)}>↓</button>
+                        </div>
+                      </div>
+                      
+                      <div className="control-section">
+                        <div className="control-label">Rotar</div>
+                        <div className="rotation-controls">
+                          <button onClick={() => handleRotateShelf(-15)}>↺</button>
+                          <button onClick={() => handleRotateShelf(15)}>↻</button>
+                        </div>
+                      </div>
+                      
+                      <div className="control-buttons">
+                        <button 
+                          className="configure-button"
+                          onClick={handleConfigurePlanogram}
+                        >
+                          Configurar Planograma
+                        </button>
+                        <button 
+                          className="delete-button"
+                          onClick={handleDeleteShelf}
+                        >
+                          Eliminar
+                        </button>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="form-column">
-                    <h5>Posición Inicial</h5>
-                    <div className="form-row">
-                    <div className="form-group">
-                      <label>Posición X</label>
-                      <input 
-                        type="number" 
-                        value={newShelf.posX} 
-                        onChange={(e) => setNewShelf({...newShelf, posX: Number(e.target.value)})}
-                        step={0.5}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Posición Z</label>
-                      <input 
-                        type="number" 
-                        value={newShelf.posZ} 
-                        onChange={(e) => setNewShelf({...newShelf, posZ: Number(e.target.value)})}
-                        step={0.5}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Rotación Y°</label>
-                      <input 
-                        type="number" 
-                        value={newShelf.rotY} 
-                        onChange={(e) => setNewShelf({...newShelf, rotY: Number(e.target.value)})}
-                        step={15}
-                      />
-                    </div>
-                  </div>
-                  </div>
-                  </div>
-                  
-                  <div className="form-actions">
-                    <button 
-                      className="action-button confirm-button"
-                      onClick={handleAddShelf}
-                    >
-                    Agregar Planograma
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-            {/* Controles del planograma seleccionado */}
-            {selectedShelf && !isAddingShelf && (
-              <div className="planograma-controls">
-                <h5>Editando: {selectedShelf.name}</h5>
-                
-                <div className="controls-container">
-                  <div className="control-section">
-                    <div className="control-label">Mover planograma</div>
-                    <div className="movement-controls">
-                      <button onClick={() => handleUpdateShelfPosition(0, -0.5)} title="Mover a la izquierda">◀</button>
-                      <button onClick={() => handleUpdateShelfPosition(2, -0.5)} title="Mover hacia atrás">▲</button>
-                      <button onClick={() => handleUpdateShelfPosition(2, 0.5)} title="Mover hacia adelante">▼</button>
-                      <button onClick={() => handleUpdateShelfPosition(0, 0.5)} title="Mover a la derecha">▶</button>
-                    </div>
-                  </div>
-                  
-                  <div className="control-section">
-                    <div className="control-label">Rotar planograma</div>
-                    <div className="rotation-controls">
-                      <button onClick={() => handleRotateShelf(-15)} title="Rotar a la izquierda">↺ 15°</button>
-                      <button onClick={() => handleRotateShelf(15)} title="Rotar a la derecha">↻ 15°</button>
-                    </div>
-                  </div>
-                  
-                  <div className="control-section control-buttons">
-                    <button 
-                      className="action-button configure-button"
-                      onClick={handleConfigurePlanogram}
-                    >
-                      <span className="material-icons">settings</span>
-                      Configurar Planograma
-                    </button>
-                    
-                    <button 
-                      className="action-button delete-button"
-                      onClick={handleDeleteShelf}
-                    >
-                      <span className="material-icons">delete</span>
-                      Eliminar Planograma
-                    </button>
-                  </div>
-                </div>
-                </div>
-              )}
-            </div>
-        </div>
-        
-        {/* Toggle button */}
-        <div 
-          className="config-toggle"
-          onClick={() => setConfigPanelCollapsed(!configPanelCollapsed)}
-        >
-          <span className="material-icons">
-            {configPanelCollapsed ? 'expand_more' : 'expand_less'}
-          </span>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
       
-      {/* Visualización 3D */}
+      {/* 3D Canvas on the right */}
       <div className="store3d-canvas">
-        <Store3D
+        <Store3D 
           storeData={storeData}
           onShelfSelect={handleShelfSelect}
           autoRotateCamera={viewOptions.autoRotate}
@@ -486,10 +440,10 @@ const Store3DEditor = ({ tiendaData, onStoreDataChange, initialStoreData }) => {
           showSky={viewOptions.showSky}
         />
       </div>
-
-      {/* Configurador de Planograma (Pantalla Completa) */}
-      {configuringShelf && (
-        <PlanogramaConfig
+      
+      {/* PlanogramaConfig modal (fullscreen) */}
+      {configureShelfId && (
+        <PlanogramaConfig 
           shelf={configuringShelf}
           onClose={() => setConfigureShelfId(null)}
           onSave={handleSavePlanogramConfig}

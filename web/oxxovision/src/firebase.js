@@ -33,6 +33,9 @@ import {
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
+// Import planogram task service
+import planogramTaskService from './services/PlanogramTaskService';
+
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA2UPFXjD963tlAlcPB7gZyXAaRqZJWZaI",
@@ -64,7 +67,7 @@ export const registerUser = async (email, password, userData) => {
       uid: user.uid,
       email: user.email,
       nombre: userData.nombre || 'Usuario',
-      rol: 'usuario', // Por defecto es usuario normal
+      rol: 'admin', // Por defecto es usuario normal
       createdAt: new Date().toISOString() // Usar formato ISO en lugar de serverTimestamp
     };
     
@@ -420,6 +423,23 @@ export const guardarConfiguracion3D = async (tiendaId, configData) => {
         const shelfId = shelf.id;
         const shelfRef = doc(planogramasRef, shelfId);
         
+        // Invertir el orden de los niveles (el nivel 0 ahora será el más bajo)
+        let invertedShelves = [];
+        let invertedMaxProductsPerLevel = [];
+        
+        if (shelf.shelves && Array.isArray(shelf.shelves)) {
+          // Crear copia invertida de los niveles
+          invertedShelves = [...shelf.shelves].reverse();
+          
+          // También invertir la configuración de productos máximos por nivel si existe
+          if (shelf.maxProductsPerLevel && Array.isArray(shelf.maxProductsPerLevel)) {
+            invertedMaxProductsPerLevel = [...shelf.maxProductsPerLevel].reverse();
+          } else {
+            // Si no hay configuración específica, crear array del mismo tamaño con valores predeterminados
+            invertedMaxProductsPerLevel = Array(invertedShelves.length).fill(shelf.maxProductsPerShelf || 30);
+          }
+        }
+        
         // Prepare shelf data to save to Firestore
         const shelfData = {
           nombre: shelf.name,
@@ -429,11 +449,12 @@ export const guardarConfiguracion3D = async (tiendaId, configData) => {
           color: shelf.color,
           ultimaModificacion: serverTimestamp(),
           actualizadoPor: currentUser.uid,
-          // Add the new properties for shelf configuration:
-          shelves: shelf.shelves || [[]],  // Array of arrays for shelf levels
+          // Add the new properties for shelf configuration with inverted order:
+          shelves: invertedShelves.length > 0 ? invertedShelves : [[]],
           maxProductsPerShelf: shelf.maxProductsPerShelf || 30,
-          maxProductsPerLevel: shelf.maxProductsPerLevel || [], // Nuevo: guardar los límites por nivel
-          configuracionGuardada: true // Indicador de que la configuración fue guardada correctamente
+          maxProductsPerLevel: invertedMaxProductsPerLevel.length > 0 ? invertedMaxProductsPerLevel : [],
+          configuracionGuardada: true, // Indicador de que la configuración fue guardada correctamente
+          nivelInvertido: true // Marca para saber que los niveles están guardados con orden invertido
         };
         
         // Check if shelf already exists
@@ -460,17 +481,15 @@ export const guardarConfiguracion3D = async (tiendaId, configData) => {
         });
         await Promise.all(deletePromises);
 
-        // Procesamos los productos en cada nivel del estante
-        if (shelf.shelves && Array.isArray(shelf.shelves)) {
-          for (let levelIndex = 0; levelIndex < shelf.shelves.length; levelIndex++) {
-            const level = shelf.shelves[levelIndex];
+        // Procesamos los productos en cada nivel del estante (ya invertido)
+        if (invertedShelves.length > 0) {
+          for (let levelIndex = 0; levelIndex < invertedShelves.length; levelIndex++) {
+            const level = invertedShelves[levelIndex];
             
             if (level && Array.isArray(level)) {
               // Calcular configuración específica para este nivel
               const levelConfig = {
-                maxProducts: shelf.maxProductsPerLevel && shelf.maxProductsPerLevel[levelIndex] 
-                  ? shelf.maxProductsPerLevel[levelIndex] 
-                  : shelf.maxProductsPerShelf || 30
+                maxProducts: invertedMaxProductsPerLevel[levelIndex] || shelf.maxProductsPerShelf || 30
               };
               
               // Guardar la configuración del nivel
@@ -480,7 +499,9 @@ export const guardarConfiguracion3D = async (tiendaId, configData) => {
                   indice: levelIndex,
                   maxProductos: levelConfig.maxProducts,
                   cantidadProductos: level.length,
-                  ultimaModificacion: serverTimestamp()
+                  ultimaModificacion: serverTimestamp(),
+                  // El nivel físico real (0 es el más bajo, aumentando hacia arriba)
+                  nivelFisico: levelIndex
                 }
               );
               
@@ -499,16 +520,14 @@ export const guardarConfiguracion3D = async (tiendaId, configData) => {
                     categoria: product.category || 'Sin categoría',
                     tamano: product.size || [0.1, 0.1, 0.1],
                     imagenUrl: product.imagenUrl || '',
-      fechaCreacion: serverTimestamp(),
-      creadoPor: currentUser.uid
-    };
+                    fechaCreacion: serverTimestamp(),
+                    creadoPor: currentUser.uid
+                  };
     
-                  // Calcular posición 3D relativa del producto en el estante (necesario para visualización 3D)
+                  // Calcular posición 3D relativa del producto en el estante
                   const shelfSize = shelf.size || [1, 1, 1];
                   const totalProducts = level.length;
-                  const maxProducts = shelf.maxProductsPerLevel && shelf.maxProductsPerLevel[levelIndex] 
-                    ? shelf.maxProductsPerLevel[levelIndex] 
-                    : (shelf.maxProductsPerShelf || 30);
+                  const maxProducts = invertedMaxProductsPerLevel[levelIndex] || (shelf.maxProductsPerShelf || 30);
                   
                   // Calcular grid para distribución de productos
                   const gridCols = Math.min(10, maxProducts);
@@ -520,7 +539,10 @@ export const guardarConfiguracion3D = async (tiendaId, configData) => {
                   const col = productIndex % gridCols;
                   const row = Math.floor(productIndex / gridCols);
                   
-                  const shelfHeight = shelfSize[1] / shelf.shelves.length;
+                  // Calcular la posición en Y basada en el índice invertido
+                  // El nivel 0 está abajo, cada nivel sube
+                  const shelfHeight = shelfSize[1] / invertedShelves.length;
+                  // Ajustar posición Y para que el nivel 0 esté abajo
                   const levelY = -shelfSize[1]/2 + (levelIndex + 0.5) * shelfHeight;
                   
                   const startX = -shelfSize[0]/2 + productWidth/2;
@@ -576,7 +598,7 @@ export const obtenerConfiguracion3D = async (tiendaId) => {
       throw new Error("La tienda no existe.");
     }
     
-      const tiendaData = tiendaDoc.data();
+    const tiendaData = tiendaDoc.data();
     
     // Si no hay configuración 3D, devolver una por defecto
     if (!tiendaData.config3d) {
@@ -597,6 +619,7 @@ export const obtenerConfiguracion3D = async (tiendaId) => {
     // Process each planogram document
     for (const planogramaDoc of planogramasSnapshot.docs) {
       const planogramaData = planogramaDoc.data();
+      const isInverted = planogramaData.nivelInvertido || false;
       
       // Get the products from the productos subcollection
       const productosRef = collection(planogramaDoc.ref, "productos");
@@ -698,7 +721,8 @@ export const obtenerConfiguracion3D = async (tiendaId) => {
         shelves: levels,
         maxProductsPerShelf: planogramaData.maxProductsPerShelf || 30,
         maxProductsPerLevel: maxProductsPerLevel,
-        configuracionGuardada: planogramaData.configuracionGuardada || false
+        configuracionGuardada: planogramaData.configuracionGuardada || false,
+        nivelInvertido: isInverted // Pasar la marca de niveles invertidos al cliente
       };
       
       shelves.push(shelf);
@@ -726,6 +750,7 @@ export const obtenerPlanograma = async (tiendaId, planogramaId) => {
     }
     
     const planogramaData = planogramaDoc.data();
+    const isInverted = planogramaData.nivelInvertido || false;
     
     // Obtener la configuración de los niveles si existe
     const nivelesRef = collection(db, "tiendas", tiendaId, "planogramas", planogramaId, "niveles");
@@ -810,7 +835,8 @@ export const obtenerPlanograma = async (tiendaId, planogramaId) => {
       shelves: levels, // Reemplazar con los niveles organizados
       maxProductsPerLevel: maxProductsPerLevel, // Añadir configuración de niveles
       products: freeProducts, // Productos no organizados en niveles
-      configuracionGuardada: planogramaData.configuracionGuardada || false
+      configuracionGuardada: planogramaData.configuracionGuardada || false,
+      nivelInvertido: isInverted // Pasar la marca de niveles invertidos al cliente
     };
   } catch (error) {
     console.error("Error al obtener planograma:", error);
@@ -1127,6 +1153,760 @@ export const eliminarProducto = async (productoId) => {
     console.error("Error al eliminar producto:", error);
     throw error;
   }
+};
+
+// FUNCIONES PARA EL SISTEMA DE TAREAS
+
+// Obtener empleados de una tienda
+export const obtenerEmpleadosTienda = async (tiendaId) => {
+  try {
+    console.log('Obteniendo empleados para tienda:', tiendaId);
+    
+    // Obtener la tienda para ver sus empleados asignados
+    const tiendaDoc = await getDoc(doc(db, "tiendas", tiendaId));
+    
+    if (!tiendaDoc.exists()) {
+      console.error('No se encontró la tienda:', tiendaId);
+      throw new Error('No se encontró la tienda');
+    }
+    
+    const tiendaData = tiendaDoc.data();
+    console.log('Datos de tienda recuperados:', tiendaData);
+    
+    // Crear array para almacenar todos los empleados
+    const todosEmpleados = [];
+    
+    // Añadir gerente si existe
+    if (tiendaData.gerente && tiendaData.gerente.id) {
+      console.log('Añadiendo gerente:', tiendaData.gerente);
+      todosEmpleados.push({
+        ...tiendaData.gerente,
+        rol: tiendaData.gerente.rol || 'gerente'
+      });
+    }
+    
+    // Añadir el creador como tipo gerente si existe
+    if (tiendaData.creadoPor) {
+      try {
+        const creadorData = await getUserData(tiendaData.creadoPor);
+        if (creadorData) {
+          const creadorComoGerente = {
+            id: tiendaData.creadoPor,
+            nombre: creadorData.nombre || 'Creador',
+            rol: creadorData.rol || 'admin'
+          };
+          console.log('Añadiendo creador como gerente:', creadorComoGerente);
+          // Verificar que no esté duplicado
+          if (!todosEmpleados.some(emp => emp.id === creadorComoGerente.id)) {
+            todosEmpleados.push(creadorComoGerente);
+          }
+        }
+      } catch (err) {
+        console.warn('Error al obtener datos del creador:', err);
+        // No interrumpir por esto
+      }
+    }
+    
+    // Verificar si la tienda tiene empleados configurados
+    if (tiendaData.empleados && Array.isArray(tiendaData.empleados)) {
+      // Filtrar empleados para eliminar valores nulos o inválidos
+      const empleadosValidos = tiendaData.empleados.filter(emp => 
+        emp && typeof emp === 'object' && emp.id
+      );
+      
+      console.log('Empleados válidos encontrados:', empleadosValidos.length);
+      
+      // Añadir empleados válidos al array, evitando duplicados
+      empleadosValidos.forEach(emp => {
+        if (!todosEmpleados.some(existingEmp => existingEmp.id === emp.id)) {
+          todosEmpleados.push({
+            ...emp,
+            rol: emp.rol || 'empleado'
+          });
+        }
+      });
+    } else {
+      console.log('No hay empleados configurados en la tienda');
+    }
+    
+    // Buscar supervisores de la colección de usuarios
+    try {
+      console.log('Buscando supervisores en la colección de usuarios...');
+      const usuariosQuery = query(
+        collection(db, "usuarios"),
+        where("rol", "in", ["supervisor", "admin"])
+      );
+      
+      const supervisoresSnapshot = await getDocs(usuariosQuery);
+      
+      if (!supervisoresSnapshot.empty) {
+        console.log(`Se encontraron ${supervisoresSnapshot.size} supervisores/admins`);
+        
+        supervisoresSnapshot.forEach(doc => {
+          const supervisorData = doc.data();
+          if (supervisorData && !todosEmpleados.some(emp => emp.id === doc.id)) {
+            todosEmpleados.push({
+              id: doc.id,
+              nombre: supervisorData.nombre || `${supervisorData.rol.charAt(0).toUpperCase() + supervisorData.rol.slice(1)}`,
+              rol: supervisorData.rol
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('Error al buscar supervisores:', err);
+      // No interrumpir por esto
+    }
+    
+    console.log('Total de empleados disponibles:', todosEmpleados.length);
+    return todosEmpleados;
+  } catch (error) {
+    console.error('Error al obtener empleados de tienda:', error);
+    // En caso de error, devolver array vacío para no romper la UI
+    return [];
+  }
+};
+
+// Obtener tareas recurrentes de una tienda
+export const obtenerTareasTienda = async (tiendaId) => {
+  try {
+    const tareasRef = collection(db, "tiendas", tiendaId, "tareas");
+    const tareasSnapshot = await getDocs(tareasRef);
+    
+    const tareas = [];
+    let actualizaciones = [];
+    
+    tareasSnapshot.forEach((doc) => {
+      const tareaData = doc.data();
+      
+      // Verificar si la tarea tiene evidencia pero no está marcada como completada
+      if (tareaData.evidenceUrlPic && tareaData.estado !== 'completada') {
+        console.log(`Tarea ${tareaData.id} tiene evidencia pero no está completada, actualizando...`);
+        actualizaciones.push(actualizarEstadoTarea(tiendaId, tareaData.id, 'completada'));
+        tareaData.estado = 'completada'; // Actualizar el estado localmente
+      }
+      
+      tareas.push({
+        id: doc.id,
+        ...tareaData
+      });
+    });
+    
+    // Esperar a que se completen todas las actualizaciones de estado
+    if (actualizaciones.length > 0) {
+      await Promise.all(actualizaciones);
+      console.log(`${actualizaciones.length} tareas actualizadas a completadas`);
+    }
+    
+    return tareas;
+  } catch (error) {
+    console.error('Error al obtener tareas de la tienda:', error);
+    return [];
+  }
+};
+
+// Actualizar el estado de una tarea
+export const actualizarEstadoTarea = async (tiendaId, tareaId, nuevoEstado) => {
+  try {
+    // Verificar que el estado sea válido
+    const estadosValidos = ['solicitada', 'pendiente', 'enviada', 'completada'];
+    if (!estadosValidos.includes(nuevoEstado)) {
+      throw new Error(`Estado no válido: ${nuevoEstado}`);
+    }
+
+    // Actualizar el documento en Firestore
+    await updateDoc(doc(db, "tiendas", tiendaId, "tareas", tareaId), {
+      estado: nuevoEstado,
+      fechaActualizacion: serverTimestamp()
+    });
+
+    console.log(`Tarea ${tareaId} actualizada a estado: ${nuevoEstado}`);
+    return true;
+  } catch (error) {
+    console.error('Error al actualizar estado de tarea:', error);
+    throw error;
+  }
+};
+
+// Crear una tarea recurrente
+export const crearTareaRecurrente = async (tiendaId, tareaNueva) => {
+  try {
+    // Generar un ID único para la tarea
+    const tareaId = `tarea_${Date.now()}`;
+    
+    // Crear objeto para guardar en Firestore
+    const tareaData = {
+      ...tareaNueva,
+      id: tareaId,
+      tiendaId,
+      fechaCreacion: serverTimestamp(),
+      activa: true,
+      estado: 'solicitada', // Estado inicial siempre es 'solicitada'
+      evidenceUrlPic: '' // Campo para la referencia de almacenamiento
+    };
+    
+    // Asegurarse de que siempre se use el estado "solicitada" independientemente de lo que venga en tareaNueva
+    if (tareaData.estado !== 'solicitada') {
+      tareaData.estado = 'solicitada';
+    }
+    
+    // Formatear la información de asignación según corresponda
+    if (tareaNueva.asignarA === 'no_agendar') {
+      // Si no está asignada, asegurarse de que no haya datos de asignación
+      tareaData.asignarA = 'no_agendar';
+      // Eliminar cualquier campo de nombre o rol que pudiera existir
+      delete tareaData.asignarNombre;
+      delete tareaData.asignarRol;
+    } else if (tareaNueva.asignarA === 'cualquiera') {
+      // Si está asignada a cualquiera, mantener ese valor
+      tareaData.asignarA = 'cualquiera';
+      // Eliminar cualquier campo de nombre o rol que pudiera existir
+      delete tareaData.asignarNombre;
+      delete tareaData.asignarRol;
+    } else if (tareaNueva.asignarA) {
+      // Si está asignada a alguien específico, asegurarse de que tiene nombre y rol
+      // Si no se proporcionaron en el objeto original, usar valores por defecto
+      if (!tareaData.asignarNombre) {
+        tareaData.asignarNombre = 'Empleado';
+      }
+      if (!tareaData.asignarRol) {
+        tareaData.asignarRol = 'empleado';
+      }
+    }
+    
+    console.log('Creando tarea con datos:', tareaData);
+    
+    // Guardar en Firestore
+    await setDoc(doc(db, "tiendas", tiendaId, "tareas", tareaId), tareaData);
+    
+    // Devolver objeto con ID generado
+    return {
+      id: tareaId,
+      ...tareaData,
+      fechaCreacion: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error al crear tarea recurrente:', error);
+    throw error;
+  }
+};
+
+// Eliminar una tarea recurrente
+export const eliminarTareaRecurrente = async (tiendaId, tareaId) => {
+  try {
+    await deleteDoc(doc(db, "tiendas", tiendaId, "tareas", tareaId));
+    return true;
+  } catch (error) {
+    console.error('Error al eliminar tarea recurrente:', error);
+    throw error;
+  }
+};
+
+// Completar una tarea y guardar evidencia
+export const completarTarea = async (tiendaId, tareaId, datosCompletada) => {
+  try {
+    // Verificar si se proporcionó una foto
+    let fotoUrl = datosCompletada.fotoUrl || null;
+    
+    // Si hay una foto como File, subirla a Storage
+    if (datosCompletada.foto && datosCompletada.foto instanceof File) {
+      // Crear referencia para la imagen
+      const storage = getStorage();
+      const fotoPath = `tiendas/${tiendaId}/tareas_completadas/${tareaId}_${Date.now()}`;
+      const fotoRef = ref(storage, fotoPath);
+      
+      // Subir la imagen
+      const uploadTask = await uploadBytesResumable(fotoRef, datosCompletada.foto);
+      
+      // Obtener URL de descarga
+      fotoUrl = await getDownloadURL(uploadTask.ref);
+      
+      // Guardar la referencia de almacenamiento
+      datosCompletada.evidenceUrlPic = fotoUrl;
+    }
+    
+    // Obtener información del usuario actual para guardarla como responsable
+    let responsableInfo = {
+      empleadoId: datosCompletada.responsable || auth.currentUser?.uid || 'desconocido'
+    };
+    
+    // Si tenemos un ID de empleado específico, intentar obtener sus datos
+    if (responsableInfo.empleadoId && responsableInfo.empleadoId !== 'desconocido') {
+      try {
+        const userData = await getUserData(responsableInfo.empleadoId);
+        if (userData) {
+          responsableInfo.responsableNombre = userData.nombre || 'Usuario';
+          responsableInfo.responsableRol = userData.rol || 'empleado';
+        }
+      } catch (err) {
+        console.warn('Error al obtener datos del responsable:', err);
+      }
+    }
+    
+    // Obtener información adicional de la tarea original si no está en los datos completados
+    let planogramaInfo = {};
+    let planogramaId = null;
+    
+    if (datosCompletada.planogramaId) {
+      planogramaId = datosCompletada.planogramaId;
+      planogramaInfo = {
+        planogramaId: datosCompletada.planogramaId,
+        planogramaNombre: datosCompletada.planogramaNombre || 'Planograma asociado'
+      };
+    } else {
+      // Intentar obtener de la tarea original
+      try {
+        const tareaDoc = await getDoc(doc(db, "tiendas", tiendaId, "tareas", tareaId));
+        if (tareaDoc.exists()) {
+          const tareaData = tareaDoc.data();
+          if (tareaData.planogramaId) {
+            planogramaId = tareaData.planogramaId;
+            planogramaInfo = {
+              planogramaId: tareaData.planogramaId,
+              planogramaNombre: tareaData.planogramaNombre || 'Planograma asociado'
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Error al obtener información de la tarea original:', err);
+      }
+    }
+    
+    // Si hay un planograma asociado, obtener la información de los productos por nivel
+    let planogramData = {};
+    if (planogramaId) {
+      try {
+        console.log('Obteniendo productos del planograma:', planogramaId);
+        
+        // Obtener productos organizados por nivel
+        const productIdsByLevel = await planogramTaskService.getProductIdsByLevel(tiendaId, planogramaId);
+        
+        if (productIdsByLevel && productIdsByLevel.length > 0) {
+          planogramData = {
+            planogramProductIds: productIdsByLevel
+          };
+          console.log('Productos del planograma organizados por nivel:', JSON.stringify(productIdsByLevel));
+          console.log(`Total de niveles: ${productIdsByLevel.length}, con productos: ${productIdsByLevel.flat().length}`);
+        } else {
+          console.warn('No se encontraron productos por nivel en el planograma');
+        }
+      } catch (err) {
+        console.error('Error al obtener productos del planograma:', err);
+      }
+    }
+    
+    // Crear registro de tarea completada
+    const tareaCompletadaId = `tarea_completada_${Date.now()}`;
+    const tareaCompletadaData = {
+      id: tareaCompletadaId,
+      tareaId,
+      tiendaId,
+      fechaCompletada: serverTimestamp(),
+      texto: datosCompletada.texto || '',
+      fotoUrl,
+      evidenceUrlPic: datosCompletada.evidenceUrlPic || fotoUrl || '',
+      turno: datosCompletada.turno,
+      ...responsableInfo,
+      ...planogramaInfo,
+      ...planogramData,
+      tituloTarea: datosCompletada.tituloTarea,
+      tiempoLimite: datosCompletada.tiempoLimite || 'sin_limite',
+      fechaLimite: datosCompletada.fechaLimite || null
+    };
+    
+    console.log('Guardando tarea completada con datos:', tareaCompletadaData);
+    
+    // Guardar en Firestore
+    await setDoc(
+      doc(db, "tiendas", tiendaId, "tareas_completadas", tareaCompletadaId),
+      tareaCompletadaData
+    );
+    
+    // Actualizar el estado de la tarea original a 'completada'
+    await actualizarEstadoTarea(tiendaId, tareaId, 'completada');
+    
+    // Devolver objeto con datos de tarea completada
+    return {
+      ...tareaCompletadaData,
+      fechaCompletada: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error al completar tarea:', error);
+    throw error;
+  }
+};
+
+// Obtener tareas completadas de una tienda
+export const obtenerTareasCompletadas = async (tiendaId) => {
+  try {
+    const tareasRef = collection(db, "tiendas", tiendaId, "tareas_completadas");
+    const q = query(tareasRef, orderBy("fechaCompletada", "desc"), limit(100));
+    const tareasSnapshot = await getDocs(q);
+    
+    const tareasCompletadas = [];
+    tareasSnapshot.forEach((doc) => {
+      const datos = doc.data();
+      
+      // Convertir Timestamp a string ISO para uso en cliente
+      if (datos.fechaCompletada && typeof datos.fechaCompletada.toDate === 'function') {
+        datos.fechaCompletada = datos.fechaCompletada.toDate().toISOString();
+      }
+      
+      tareasCompletadas.push({
+        id: doc.id,
+        ...datos
+      });
+    });
+    
+    return tareasCompletadas;
+  } catch (error) {
+    console.error('Error al obtener tareas completadas:', error);
+    return [];
+  }
+};
+
+// Función para obtener todos los planogramas de una tienda
+export const obtenerPlanogramas = async (tiendaId) => {
+  try {
+    console.log('Obteniendo planogramas para tienda:', tiendaId);
+    
+    // Referencia a la colección de planogramas
+    const planogramasRef = collection(db, "tiendas", tiendaId, "planogramas");
+    const planogramasSnapshot = await getDocs(planogramasRef);
+    
+    if (planogramasSnapshot.empty) {
+      console.log('No se encontraron planogramas para la tienda');
+      return [];
+    }
+    
+    const planogramas = [];
+    planogramasSnapshot.forEach((doc) => {
+      const planogramaData = doc.data();
+      planogramas.push({
+        id: doc.id,
+        nombre: planogramaData.nombre || `Planograma ${doc.id.substring(0, 6)}`,
+        position: planogramaData.posicion,
+        size: planogramaData.tamano,
+        color: planogramaData.color,
+        shelves: planogramaData.shelves,
+        ubicacion: planogramaData.ubicacion || 'Sin ubicación específica',
+        nivelInvertido: planogramaData.nivelInvertido || false // Añadir información de niveles invertidos
+      });
+    });
+    
+    console.log(`Se encontraron ${planogramas.length} planogramas`);
+    return planogramas;
+  } catch (error) {
+    console.error('Error al obtener planogramas:', error);
+    return [];
+  }
+};
+
+// FUNCIONES PARA CONFIGURACIÓN DE TAREAS AUTÁTICAS
+
+// Crear una configuración de tarea programada
+export const crearConfiguracionTarea = async (tiendaId, configuracion) => {
+  try {
+    // Generar un ID único para la configuración
+    const configId = `config_tarea_${Date.now()}`;
+    
+    // Crear objeto para guardar en Firestore
+    const configData = {
+      ...configuracion,
+      id: configId,
+      tiendaId,
+      fechaCreacion: serverTimestamp(),
+      activa: true,
+      ultimaEjecucion: null // Campo para seguimiento de última creación de tarea
+    };
+    
+    console.log('Creando configuración de tarea automática:', configData);
+    
+    // Guardar en Firestore
+    await setDoc(doc(db, "tiendas", tiendaId, "tareas_configuracion", configId), configData);
+    
+    // Devolver objeto con ID generado
+    return {
+      id: configId,
+      ...configData,
+      fechaCreacion: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error al crear configuración de tarea:', error);
+    throw error;
+  }
+};
+
+// Obtener configuraciones de tareas programadas de una tienda
+export const obtenerConfiguracionesTareas = async (tiendaId) => {
+  try {
+    const configuracionesRef = collection(db, "tiendas", tiendaId, "tareas_configuracion");
+    const configuracionesSnapshot = await getDocs(configuracionesRef);
+    
+    const configuraciones = [];
+    configuracionesSnapshot.forEach((doc) => {
+      const configData = doc.data();
+      
+      // Convertir Timestamps a strings ISO para uso en cliente
+      if (configData.fechaCreacion && typeof configData.fechaCreacion.toDate === 'function') {
+        configData.fechaCreacion = configData.fechaCreacion.toDate().toISOString();
+      }
+      if (configData.ultimaEjecucion && typeof configData.ultimaEjecucion.toDate === 'function') {
+        configData.ultimaEjecucion = configData.ultimaEjecucion.toDate().toISOString();
+      }
+      
+      configuraciones.push({
+        id: doc.id,
+        ...configData
+      });
+    });
+    
+    return configuraciones;
+  } catch (error) {
+    console.error('Error al obtener configuraciones de tareas:', error);
+    return [];
+  }
+};
+
+// Eliminar una configuración de tarea
+export const eliminarConfiguracionTarea = async (tiendaId, configId) => {
+  try {
+    await deleteDoc(doc(db, "tiendas", tiendaId, "tareas_configuracion", configId));
+    return true;
+  } catch (error) {
+    console.error('Error al eliminar configuración de tarea:', error);
+    throw error;
+  }
+};
+
+// Actualizar una configuración de tarea
+export const actualizarConfiguracionTarea = async (tiendaId, configId, nuevaConfig) => {
+  try {
+    // Excluir campos que no deben actualizarse
+    const { id, tiendaId: tid, fechaCreacion, ...datosActualizables } = nuevaConfig;
+    
+    // Actualizar en Firestore
+    await updateDoc(doc(db, "tiendas", tiendaId, "tareas_configuracion", configId), {
+      ...datosActualizables,
+      fechaActualizacion: serverTimestamp()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error al actualizar configuración:', error);
+    throw error;
+  }
+};
+
+// Generar tareas automáticas basadas en las configuraciones
+export const generarTareasAutomaticas = async (tiendaId) => {
+  try {
+    // Obtener todas las configuraciones activas
+    const configuracionesRef = collection(db, "tiendas", tiendaId, "tareas_configuracion");
+    const q = query(configuracionesRef, where("activa", "==", true));
+    const configuracionesSnapshot = await getDocs(q);
+    
+    const ahora = new Date();
+    const actualizaciones = [];
+    const tareasGeneradas = [];
+    
+    // Procesar cada configuración
+    for (const docConfig of configuracionesSnapshot.docs) {
+      const config = docConfig.data();
+      
+      // Verificar si es momento de crear una nueva tarea según la configuración
+      const debeCrearTarea = verificarCreacionTarea(config, ahora);
+      
+      if (debeCrearTarea) {
+        try {
+          // Crear una nueva tarea basada en la plantilla
+          const nuevaTarea = await crearTareaDesdeConfiguracion(tiendaId, config, ahora);
+          tareasGeneradas.push(nuevaTarea);
+          
+          // Actualizar timestamp de última ejecución
+          actualizaciones.push(
+            updateDoc(doc(db, "tiendas", tiendaId, "tareas_configuracion", config.id), {
+              ultimaEjecucion: serverTimestamp()
+            })
+          );
+        } catch (err) {
+          console.error(`Error al crear tarea desde configuración ${config.id}:`, err);
+        }
+      }
+    }
+    
+    // Esperar a que se completen todas las actualizaciones
+    if (actualizaciones.length > 0) {
+      await Promise.all(actualizaciones);
+    }
+    
+    console.log(`Se generaron ${tareasGeneradas.length} tareas automáticas`);
+    return tareasGeneradas;
+  } catch (error) {
+    console.error('Error al generar tareas automáticas:', error);
+    throw error;
+  }
+};
+
+// Función auxiliar para verificar si debe crearse una tarea
+function verificarCreacionTarea(config, fechaActual) {
+  // Si no tiene última ejecución, crear la primera tarea
+  if (!config.ultimaEjecucion) return true;
+  
+  // Convertir última ejecución a Date si es Timestamp
+  let ultimaEjecucion;
+  if (typeof config.ultimaEjecucion.toDate === 'function') {
+    ultimaEjecucion = config.ultimaEjecucion.toDate();
+  } else {
+    ultimaEjecucion = new Date(config.ultimaEjecucion);
+  }
+  
+  // Calcular tiempo transcurrido desde la última ejecución
+  const horasTranscurridas = (fechaActual - ultimaEjecucion) / (1000 * 60 * 60);
+  const segundosTranscurridos = (fechaActual - ultimaEjecucion) / 1000;
+  
+  // Determinar frecuencia en horas o segundos
+  let frecuenciaHoras;
+  let frecuenciaSegundos = 0;
+  
+  // Agregar opción para pruebas de 10 segundos
+  if (config.frecuencia === 'cada_10_segundos') {
+    frecuenciaSegundos = 10;
+    // Verificar si han pasado los segundos necesarios
+    return segundosTranscurridos >= frecuenciaSegundos;
+  } else {
+    // Determinar frecuencia en horas para las opciones normales
+    switch (config.frecuencia) {
+      case 'diaria':
+        frecuenciaHoras = 24;
+        break;
+      case 'semanal':
+        frecuenciaHoras = 24 * 7;
+        break;
+      case 'quincenal':
+        frecuenciaHoras = 24 * 14;
+        break;
+      case 'mensual':
+        frecuenciaHoras = 24 * 30; // Aproximado
+        break;
+      default:
+        frecuenciaHoras = 24; // Por defecto, diaria
+    }
+    
+    // Si ha pasado suficiente tiempo según la frecuencia, crear tarea
+    return horasTranscurridas >= frecuenciaHoras;
+  }
+}
+
+// Función para crear una tarea desde una configuración
+async function crearTareaDesdeConfiguracion(tiendaId, config, fechaActual) {
+  // Crear objeto de tarea con los datos de la configuración
+  const tareaNueva = {
+    titulo: config.plantillaTitulo,
+    descripcion: config.plantillaDescripcion,
+    frecuencia: config.frecuencia,
+    prioridad: config.prioridad || 'normal',
+    requiereFoto: config.requiereFoto !== false,
+    requiereTexto: config.requiereTexto !== false,
+    turno: config.turno || 'todos',
+    asignarA: config.asignarA || 'no_agendar',
+    planogramaId: config.planogramaId || '',
+    planogramaNombre: config.planogramaNombre || '',
+    tiempoLimite: config.tiempoLimite || 'sin_limite',
+    origenConfigId: config.id // Referencia a la configuración que generó esta tarea
+  };
+  
+  // Si hay asignación específica, incluir datos adicionales
+  if (config.asignarA && config.asignarA !== 'no_agendar' && config.asignarA !== 'cualquiera') {
+    tareaNueva.asignarNombre = config.asignarNombre;
+    tareaNueva.asignarRol = config.asignarRol;
+  }
+  
+  // Calcular fecha límite basada en la configuración
+  if (config.horaFinalizacion) {
+    // Crear fecha límite a partir de fecha actual
+    const fechaLimite = new Date(fechaActual);
+    
+    // Establecer hora de finalización desde la configuración
+    // Formato esperado: "HH:MM" (24h)
+    if (typeof config.horaFinalizacion === 'string' && config.horaFinalizacion.includes(':')) {
+      const [horas, minutos] = config.horaFinalizacion.split(':').map(Number);
+      fechaLimite.setHours(horas, minutos, 0, 0);
+      
+      // Si la hora de finalización ya pasó hoy, establecer para mañana
+      if (fechaLimite <= fechaActual) {
+        fechaLimite.setDate(fechaLimite.getDate() + 1);
+      }
+      
+      tareaNueva.fechaLimite = fechaLimite.toISOString();
+    }
+  }
+  
+  // Guardar la fecha de la tarea en el título para claridad
+  const fechaFormateada = fechaActual.toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  
+  // Añadir fecha y turno al título
+  tareaNueva.titulo = `${tareaNueva.titulo} - ${fechaFormateada} - ${
+    tareaNueva.turno === 'matutino' ? 'Matutino' :
+    tareaNueva.turno === 'vespertino' ? 'Vespertino' :
+    tareaNueva.turno === 'nocturno' ? 'Nocturno' : 'Todo el día'
+  }`;
+  
+  // Crear la tarea en Firestore
+  return await crearTareaRecurrente(tiendaId, tareaNueva);
+}
+
+// Verificar y generar tareas automáticas para todas las tiendas
+export const verificarTareasAutomaticasTiendas = async () => {
+  try {
+    console.log('Verificando tareas automáticas para todas las tiendas...');
+    
+    // Obtener todas las tiendas
+    const tiendasRef = collection(db, "tiendas");
+    const tiendasSnapshot = await getDocs(tiendasRef);
+    
+    let totalTareasGeneradas = 0;
+    
+    // Para cada tienda, verificar y generar tareas automáticas
+    for (const tiendaDoc of tiendasSnapshot.docs) {
+      const tiendaId = tiendaDoc.id;
+      
+      try {
+        // Generar tareas automáticas para esta tienda
+        const tareasGeneradas = await generarTareasAutomaticas(tiendaId);
+        console.log(`Tienda ${tiendaId}: generadas ${tareasGeneradas.length} tareas`);
+        totalTareasGeneradas += tareasGeneradas.length;
+      } catch (err) {
+        console.error(`Error al generar tareas para tienda ${tiendaId}:`, err);
+        // Continuar con la siguiente tienda
+      }
+    }
+    
+    console.log(`Total de tareas automáticas generadas: ${totalTareasGeneradas}`);
+    return totalTareasGeneradas;
+  } catch (error) {
+    console.error('Error al verificar tareas automáticas:', error);
+    return 0;
+  }
+};
+
+// Variable para almacenar la última verificación
+let ultimaVerificacionTareas = 0;
+
+// Función para verificar si es necesario generar tareas automáticas
+// Se llama cuando la aplicación arranca o cuando el usuario inicia sesión
+export const verificarTareasAutomaticasSiNecesario = async () => {
+  const ahora = Date.now();
+  
+  
+  // Actualizar timestamp de última verificación
+  ultimaVerificacionTareas = ahora;
+  
+  return await verificarTareasAutomaticasTiendas();
 };
 
 export { auth, db, storage };

@@ -11,6 +11,9 @@ const ImageAnalyzer = () => {
   const [analysisResults, setAnalysisResults] = useState([]);
   const [currentResult, setCurrentResult] = useState(null);
   
+  // Inicializar Storage explícitamente
+  const storage = getStorage();
+  
   // Handle file selection
   const handleFileChange = (selectedFile) => {
     setFile(selectedFile);
@@ -40,129 +43,109 @@ const ImageAnalyzer = () => {
         // Dibujar la imagen en el canvas
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Obtener datos de píxeles
+        // Obtener datos de la imagen
         const imageData = ctx.getImageData(0, 0, width, height);
         const data = imageData.data;
         
-        // Analizar colores
-        const colors = {};
-        let redPixels = 0;
-        let greenPixels = 0;
-        let bluePixels = 0;
-        let brightnessSum = 0;
+        // Análisis básico
+        let redTotal = 0, greenTotal = 0, blueTotal = 0;
+        let pixelCount = width * height;
         
+        // Calcular promedios de color
         for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
+          redTotal += data[i];
+          greenTotal += data[i+1];
+          blueTotal += data[i+2];
+        }
+        
+        const redAvg = redTotal / pixelCount;
+        const greenAvg = greenTotal / pixelCount;
+        const blueAvg = blueTotal / pixelCount;
           
-          // Simplificar colores
-          const key = `${Math.floor(r/32)},${Math.floor(g/32)},${Math.floor(b/32)}`;
-          colors[key] = (colors[key] || 0) + 1;
-          
-          // Analizar componentes de color
-          if (r > Math.max(g, b) + 20) redPixels++;
-          else if (g > Math.max(r, b) + 20) greenPixels++;
-          else if (b > Math.max(r, g) + 20) bluePixels++;
-          
-          // Calcular brillo
-          brightnessSum += (r + g + b) / 3;
+        // Determinar el color predominante
+        let dominantColor = 'neutral';
+        const maxChannel = Math.max(redAvg, greenAvg, blueAvg);
+        if (maxChannel === redAvg && redAvg > greenAvg * 1.2 && redAvg > blueAvg * 1.2) {
+          dominantColor = 'rojo';
+        } else if (maxChannel === greenAvg && greenAvg > redAvg * 1.2 && greenAvg > blueAvg * 1.2) {
+          dominantColor = 'verde';
+        } else if (maxChannel === blueAvg && blueAvg > redAvg * 1.2 && blueAvg > greenAvg * 1.2) {
+          dominantColor = 'azul';
         }
         
-        // Calcular estadísticas
-        const pixelCount = width * height;
-        const avgBrightness = brightnessSum / pixelCount;
-        const isDark = avgBrightness < 128;
+        // Calcular brillo general
+        const brightness = (redAvg + greenAvg + blueAvg) / 3;
         
-        const redPercent = (redPixels / pixelCount) * 100;
-        const greenPercent = (greenPixels / pixelCount) * 100;
-        const bluePercent = (bluePixels / pixelCount) * 100;
+        // Detección de objetos simple en el cliente
+        const objects = [];
         
-        // Convertir colores a array ordenado
-        const dominantColors = Object.entries(colors)
-          .map(([key, count]) => {
-            const [r, g, b] = key.split(',').map(v => parseInt(v) * 32);
-            return {
-              rgb: `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`,
-              count,
-              percentage: (count / pixelCount) * 100
-            };
-          })
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
-        
-        // Generar categorías basadas en el análisis
-        const categories = [];
-        
-        // Categorías basadas en colores
-        if (redPercent > 40) {
-          categories.push({ category: "Rojo predominante", probability: redPercent / 100 });
-        }
-        if (greenPercent > 40) {
-          categories.push({ category: "Verde predominante", probability: greenPercent / 100 });
-        }
-        if (bluePercent > 40) {
-          categories.push({ category: "Azul predominante", probability: bluePercent / 100 });
+        // Simulación de detección de objetos básicos basados en el análisis de colores
+        if (redAvg > 100 && greenAvg < 100 && blueAvg < 100) {
+          objects.push({
+            name: "Objeto rojo",
+            confidence: 0.75,
+            boundingBox: null  // Simulamos la detección pero no tenemos coordenadas reales
+          });
         }
         
-        // Categorías basadas en brillo
-        if (isDark) {
-          categories.push({ category: "Imagen oscura", probability: (255 - avgBrightness) / 255 });
-        } else {
-          categories.push({ category: "Imagen clara", probability: avgBrightness / 255 });
+        if (greenAvg > 100 && redAvg < 100 && blueAvg < 100) {
+          objects.push({
+            name: "Objeto verde",
+            confidence: 0.65,
+            boundingBox: null
+          });
         }
         
-        // Categorías basadas en orientación
-        if (img.width > img.height) {
-          categories.push({ category: "Imagen horizontal", probability: 0.99 });
-        } else if (img.height > img.width) {
-          categories.push({ category: "Imagen vertical", probability: 0.99 });
-        } else {
-          categories.push({ category: "Imagen cuadrada", probability: 0.99 });
+        if (blueAvg > 100 && redAvg < 100 && greenAvg < 100) {
+          objects.push({
+            name: "Objeto azul",
+            confidence: 0.60,
+            boundingBox: null
+          });
         }
         
-        // Categorías basadas en tamaño
-        if (img.width > 1000 && img.height > 1000) {
-          categories.push({ category: "Alta resolución", probability: 0.95 });
-        }
+        // Identificar categorías principales basadas en el análisis simple
+        const categories = [
+          { name: "Colorido", probability: Math.min(1, (Math.abs(redAvg - greenAvg) + Math.abs(redAvg - blueAvg) + Math.abs(greenAvg - blueAvg)) / 255) },
+          { name: "Brillante", probability: Math.min(1, brightness / 200) },
+          { name: "Oscuro", probability: Math.min(1, 1 - (brightness / 200)) }
+        ];
         
-        // Ordenar categorías por probabilidad
-        const sortedCategories = categories
-          .sort((a, b) => b.probability - a.probability)
-          .slice(0, 5);
+        // Creamos predicciones con formato similar a Vision API
+        const predictions = categories.map(category => ({
+          category: category.name,
+          probability: category.probability
+        }));
         
-        // Asegurarse de tener al menos 5 categorías
-        while (sortedCategories.length < 5) {
-          if (sortedCategories.length === 0) {
-            sortedCategories.push({ category: "Imagen", probability: 0.8 });
-          } else if (sortedCategories.length === 1) {
-            sortedCategories.push({ category: "Fotografía", probability: 0.7 });
-          } else if (sortedCategories.length === 2) {
-            sortedCategories.push({ category: "Gráfico", probability: 0.6 });
-          } else if (sortedCategories.length === 3) {
-            sortedCategories.push({ category: "Digital", probability: 0.5 });
-          } else if (sortedCategories.length === 4) {
-            sortedCategories.push({ category: "Visual", probability: 0.4 });
-          }
-        }
-        
-        // Retornar resultado
-        resolve({
-          success: true,
-          predictions: sortedCategories,
+        // Resultado final con formato compatible
+        const result = {
+          predictions: predictions,
+          objects: objects,
+          dominant_color: dominantColor,
+          brightness: brightness / 255,
           metadata: {
-            dimensions: { width: img.width, height: img.height },
-            avgBrightness,
-            dominantColors
+            width: img.width,
+            height: img.height,
+            analyzed_width: width,
+            analyzed_height: height,
+            analysis_type: 'client-side'
           }
-        });
+        };
+        
+        // Simular un pequeño retraso para procesamiento
+        setTimeout(() => {
+          resolve(result);
+        }, 1000);
       };
       
       img.onerror = () => {
+        // En caso de error, devolver un resultado vacío pero válido
         resolve({
-          success: false,
-          error: "Error loading image",
-          description: "Could not load the image for analysis"
+          predictions: [
+            { category: "Error", probability: 1.0 }
+          ],
+          objects: [],
+          error: "No se pudo cargar la imagen"
         });
       };
       
@@ -173,7 +156,7 @@ const ImageAnalyzer = () => {
   // Upload file to Firebase Storage
   const handleUpload = async () => {
     if (!file) {
-      alert('Por favor selecciona una imagen primero');
+      alert('Por favor selecciona un archivo primero');
       return;
     }
     
@@ -181,17 +164,15 @@ const ImageAnalyzer = () => {
     setUploadProgress(0);
     
     try {
-      // Create unique filename with timestamp
-      const timestamp = new Date().getTime();
-      const fileName = `image_${timestamp}`;
-      const fileExtension = file.name.split('.').pop();
-      const fullFileName = `${fileName}.${fileExtension}`;
+      // Crear un nombre de archivo único
+      const fileName = `image_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
       
-      // Create storage reference
-      const storage = getStorage();
-      const storageRef = ref(storage, `image_analysis/${fullFileName}`);
+      // Crear una referencia específica a la carpeta image_analysis
+      const storageRef = ref(storage, `image_analysis/${fileName}`);
       
-      // Upload file with progress monitoring
+      console.log('Subiendo archivo a:', `image_analysis/${fileName}`);
+      
+      // Subir el archivo
       const uploadTask = uploadBytesResumable(storageRef, file);
       
       uploadTask.on(
@@ -217,7 +198,7 @@ const ImageAnalyzer = () => {
           
           // Mostrar estado de procesamiento
           setCurrentResult({
-            id: fileName,
+            id: Date.now(),
             imageUrl: downloadURL,
             status: 'processing'
           });
@@ -253,6 +234,19 @@ const ImageAnalyzer = () => {
               const analysisResult = await response.json();
               console.log('Cloud Function analysis result:', analysisResult);
               
+              // Verificar si la respuesta es exitosa
+              if (!analysisResult.success) {
+                console.error('Respuesta no exitosa de Cloud Function:', analysisResult);
+                throw new Error('Respuesta no exitosa de Cloud Function');
+              }
+              
+              // Si no tiene objetos detectados, inicializar array vacío
+              if (!analysisResult.objects) {
+                console.log('No se detectaron objetos en el servidor. Añadiendo campo vacío.');
+                analysisResult.objects = [];
+              }
+              
+              try {
               // Guardar resultados en Firestore
               const db = getFirestore();
               const resultDoc = await addDoc(collection(db, 'image_analysis'), {
@@ -268,6 +262,16 @@ const ImageAnalyzer = () => {
                 result: analysisResult,
                 status: 'completed'
               });
+              } catch (firestoreError) {
+                console.error('Error al guardar en Firestore:', firestoreError);
+                // Continuar aunque falle Firestore
+                setCurrentResult({
+                  id: Date.now().toString(),
+                  imageUrl: downloadURL,
+                  result: analysisResult,
+                  status: 'completed'
+                });
+              }
             } catch (fetchError) {
               console.error('Error en fetch a Cloud Function:', fetchError);
               
@@ -293,6 +297,19 @@ const ImageAnalyzer = () => {
                 const analysisResult = await response.json();
                 console.log('Cloud Run analysis result:', analysisResult);
                 
+                // Verificar si la respuesta es exitosa
+                if (!analysisResult.success) {
+                  console.error('Respuesta no exitosa de Cloud Run:', analysisResult);
+                  throw new Error('Respuesta no exitosa de Cloud Run');
+                }
+                
+                // Si no tiene objetos detectados, inicializar array vacío
+                if (!analysisResult.objects) {
+                  console.log('No se detectaron objetos en el servidor. Añadiendo campo vacío.');
+                  analysisResult.objects = [];
+                }
+                
+                try {
                 // Guardar resultados en Firestore
                 const db = getFirestore();
                 const resultDoc = await addDoc(collection(db, 'image_analysis'), {
@@ -308,6 +325,16 @@ const ImageAnalyzer = () => {
                   result: analysisResult,
                   status: 'completed'
                 });
+                } catch (firestoreError) {
+                  console.error('Error al guardar en Firestore:', firestoreError);
+                  // Continuar aunque falle Firestore
+                  setCurrentResult({
+                    id: Date.now().toString(),
+                    imageUrl: downloadURL,
+                    result: analysisResult,
+                    status: 'completed'
+                  });
+                }
                 
                 // Salir del bloque try/catch
                 return;
@@ -324,6 +351,7 @@ const ImageAnalyzer = () => {
               console.log('Fallback to client-side analysis');
               const analysisResult = await analyzeImage(downloadURL);
               
+              try {
               // Guardar resultados en Firestore
               const db = getFirestore();
               const resultDoc = await addDoc(collection(db, 'image_analysis'), {
@@ -339,13 +367,23 @@ const ImageAnalyzer = () => {
                 result: analysisResult,
                 status: 'completed'
               });
+              } catch (firestoreError) {
+                console.error('Error al guardar en Firestore:', firestoreError);
+                // Continuar aunque falle Firestore
+                setCurrentResult({
+                  id: Date.now().toString(),
+                  imageUrl: downloadURL,
+                  result: analysisResult,
+                  status: 'completed'
+                });
+              }
             } catch (fallbackError) {
               console.error('Error en análisis de respaldo:', fallbackError);
               alert('Error al analizar la imagen. Intenta de nuevo más tarde.');
               
               // Mantener la imagen pero mostrar error
               setCurrentResult({
-                id: fileName,
+                id: Date.now(),
                 imageUrl: downloadURL,
                 error: 'Error al procesar la imagen',
                 status: 'error'
@@ -406,6 +444,28 @@ const ImageAnalyzer = () => {
             </li>
           ))}
         </ul>
+        
+        {result.result.objects && (
+          <div className="detected-objects">
+            <h3>Objetos Detectados:</h3>
+            <ul className="objects-list">
+              {result.result.objects.map((object, index) => (
+                <li key={index} className="object-item">
+                  <span className="object-name">{object.name}</span>
+                  <div className="prediction-bar-container">
+                    <div 
+                      className="prediction-bar" 
+                      style={{ width: `${object.confidence * 100}%` }}
+                    ></div>
+                    <span className="prediction-percentage">
+                      {(object.confidence * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     );
   };

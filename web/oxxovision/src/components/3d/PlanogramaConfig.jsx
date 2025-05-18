@@ -118,7 +118,7 @@ const ShelfDropZone = ({ shelfIndex, products, onAddProduct, onRemove, maxProduc
       className={`shelf-drop-zone ${isActive ? 'active' : ''} ${!canDrop && isOver ? 'no-drop' : ''}`}
     >
       <div className="shelf-header">
-        <h4>Nivel {shelfIndex + 1}</h4>
+        <h4>Charola {shelvesCount - shelfIndex}</h4>
         <div className="shelf-controls">
           <span className="product-count">{products.length}/{maxProducts} productos</span>
           <div className="shelf-max-control">
@@ -128,7 +128,7 @@ const ShelfDropZone = ({ shelfIndex, products, onAddProduct, onRemove, maxProduc
               max="50" 
               value={maxProducts} 
               onChange={handleMaxProductsChange}
-              title="Máximo de productos para este nivel"
+              title="Máximo de productos para esta charola"
               className="max-products-input"
             />
           </div>
@@ -202,9 +202,22 @@ const AvailableProduct = ({ product }) => {
 };
 
 // Componente 3D para visualizar el shelf con productos
-const ShelfPreview3D = ({ shelf, shelfProducts }) => {
+const ShelfPreview3D = ({ shelf, shelfProducts, isVisible = false }) => {
   // Referencia para el grupo de productos
   const shelfRef = useRef();
+  
+  // Si no está visible, no renderizar el componente
+  if (!isVisible) {
+    return (
+      <div className="preview-3d-placeholder">
+        <div className="preview-3d-message">
+          <span className="material-icons">visibility_off</span>
+          <p>Vista 3D desactivada</p>
+          <p>Actívela desde el botón "Ver en 3D" cuando necesite visualizar el modelo</p>
+        </div>
+      </div>
+    );
+  }
   
   // Renderizar productos como cubos de colores
   const renderProducts = () => {
@@ -215,6 +228,8 @@ const ShelfPreview3D = ({ shelf, shelfProducts }) => {
     const levelHeight = shelfHeight / shelfLevels;
     
     return shelfProducts.map((levelProducts, levelIndex) => {
+      // Invertir el índice para que 0 sea abajo y el mayor arriba
+      // La posición Y se calcula desde abajo hacia arriba
       const levelY = -shelfHeight/2 + (levelIndex + 0.5) * levelHeight;
       
       // Render products in a grid layout
@@ -280,13 +295,7 @@ const ShelfPreview3D = ({ shelf, shelfProducts }) => {
     });
   };
   
-  return (
-    <Canvas style={{ width: '100%', height: '100%' }}>
-      <ambientLight intensity={0.7} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
-      <OrbitControls enableZoom={true} enablePan={true} />
-      
-      {/* Main shelf structure - simplified */}
+    return (      <Canvas         style={{ width: '100%', height: '100%' }}         className="three-js-canvas"        data-visible={isVisible ? "true" : "false"}      >        <ambientLight intensity={0.7} />        <pointLight position={[10, 10, 10]} intensity={1} />        <OrbitControls enableZoom={true} enablePan={true} />                {/* Main shelf structure - simplified */}
       <group ref={shelfRef}>
         {/* Main shelf structure */}
         <mesh position={[0, 0, 0]}>
@@ -550,7 +559,7 @@ const RealisticShelfView = ({ shelf, shelfProducts, planogramRef = null }) => {
             
             return (
               <div key={`level-${levelIndex}`} className="shelf-level">
-                <div className="level-number">{levelIndex + 1}</div>
+                <div className="level-number">Charola {shelfProducts.length - levelIndex}</div>
                 
                 {/* Contenedor de productos ultracompacto */}
                 <div className="products-container compact-view">
@@ -564,9 +573,9 @@ const RealisticShelfView = ({ shelf, shelfProducts, planogramRef = null }) => {
                           minWidth: `${baseWidth}px`,
                           marginRight: '1px',
                           position: 'relative'
-                        }}
+                        }}  
                         title={product.name}
-                        data-product-id={product.id}
+                        data-product-id={product.barcode}
                       >
                         {product.imagenUrl ? (
                           <div className="product-container" style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -643,7 +652,7 @@ const RealisticShelfView = ({ shelf, shelfProducts, planogramRef = null }) => {
                       </div>
                     ))
                   ) : (
-                    <div className="empty-level-message">Nivel vacío</div>
+                    <div className="empty-level-message">Charola vacía</div>
                   )}
                 </div>
               </div>
@@ -783,12 +792,15 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
   const [productsByCategory, setProductsByCategory] = useState({ 'Todas': [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProducts, setFilteredProducts] = useState([]);
   
-  // Estados para modales
-  const [showProductSelector, setShowProductSelector] = useState(false);
-  const [targetSlot, setTargetSlot] = useState(null);
-  const [show3DModal, setShow3DModal] = useState(false);
-  const [show2DModal, setShow2DModal] = useState(false);
+  // Estados para modales  
+  const [showProductSelector, setShowProductSelector] = useState(false);  
+  const [targetSlot, setTargetSlot] = useState(null);  
+  const [show3DModal, setShow3DModal] = useState(false);  
+  const [show2DModal, setShow2DModal] = useState(false);  
+  const [show3DView, setShow3DView] = useState(false); // Controla si se muestra la vista 3D durante la edición
   
   // Estados para notificaciones
   const [saveStatus, setSaveStatus] = useState(null); // null, 'saving', 'success', 'error'
@@ -935,6 +947,67 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
     loadProducts();
   }, []);
   
+  // Efecto para filtrar productos por búsqueda y categoría
+  useEffect(() => {
+    if (!realProducts || realProducts.length === 0) return;
+    
+    const productsToFilter = selectedCategory === 'Todas' 
+      ? realProducts 
+      : (productsByCategory[selectedCategory] || []);
+    
+    if (!searchQuery.trim()) {
+      setFilteredProducts(productsToFilter);
+      return;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    const filtered = productsToFilter.filter(product => 
+      product.name?.toLowerCase().includes(query) ||
+      product.id?.toLowerCase().includes(query) ||
+      product.sku?.toLowerCase().includes(query) ||
+      product.category?.toLowerCase().includes(query)
+    );
+    
+    setFilteredProducts(filtered);
+  }, [searchQuery, selectedCategory, realProducts, productsByCategory]);
+  
+  // Asegurar que el 3D esté completamente desactivado al inicio
+  useEffect(() => {
+    // Desactivar vista 3D por defecto
+    setShow3DView(false);
+    
+    // Limpiar cualquier elemento 3D residual
+    const cleanup3DElements = () => {
+      // Buscar y eliminar cualquier canvas de three.js que pueda estar presente
+      const canvases = document.querySelectorAll('canvas');
+      canvases.forEach(canvas => {
+        if (canvas.classList.contains('three-js-canvas') || 
+            canvas.parentElement?.classList.contains('modal-3d-body')) {
+          canvas.remove();
+        }
+      });
+
+      // Ocultar completamente cualquier contenedor relacionado con 3D
+      document.querySelectorAll('.modal-3d-content, .three-js-container, .preview-3d-placeholder').forEach(el => {
+        if (el) {
+          el.style.display = 'none';
+        }
+      });
+
+      // Añadir clase para ocultar elementos 3D via CSS
+      document.body.classList.add('planograma-config-active');
+    };
+    
+    cleanup3DElements();
+    
+    return () => {
+      // También limpiar al desmontar
+      cleanup3DElements();
+      // Eliminar clase al desmontar
+      document.body.classList.remove('planograma-config-active');
+    };
+  }, []);
+  
   // Efecto para detectar cambios en los productos y guardar automáticamente
   useEffect(() => {
     const currentProductsJSON = JSON.stringify(shelfProducts);
@@ -987,16 +1060,19 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
       setSaveMessage('Guardando cambios...');
       
       // Process shelf products to ensure all required data is present
-      const processedShelfProducts = shelfProducts.map(level => 
-        level.filter(product => product !== null).map((product, index) => ({
+      const processedShelfProducts = shelfProducts.map((level, levelIndex) => {
+        // Recordar que el nivel 0 es el de abajo, pero en la UI se muestra como Charola 1
+        const nivelActual = shelfProducts.length - 1 - levelIndex; // Asegurar que el nivel 0 sea el de abajo
+        
+        return level.filter(product => product !== null).map((product, index) => ({
           ...product,
           // Ensure grid positions are correct
           gridPosition: index,
-          nivelEstante: product.nivelEstante !== undefined ? product.nivelEstante : 0,
+          nivelEstante: nivelActual, // Usar el nivelActual calculado
           posicionEnNivel: product.posicionEnNivel !== undefined ? product.posicionEnNivel : index,
           guardadoEnNivel: true
-        }))
-      );
+        }));
+      });
       
       // VALIDACIÓN CRÍTICA: Verificar que tiendaId y shelfId no sean iguales
       if (tiendaId === shelf.id) {
@@ -1101,6 +1177,8 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
           name: product.nombre || 'Sin nombre',
           color: product.color || '#cccccc',
           category: product.categoria || 'Sin categoría',
+          sku: product.sku || product.codigo || '',
+          barcode: product.barcode || product.id, // Added barcode field, fallback to id if not available
           size: product.dimensiones ? 
             [
               product.dimensiones.ancho / 100 || 0.1, 
@@ -1111,6 +1189,7 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
         }));
         
         setRealProducts(formattedProducts);
+        setFilteredProducts(formattedProducts);
         
         // Create categories
         const categories = ['Todas'];
@@ -1136,6 +1215,7 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
         console.log('No se encontraron productos, usando catálogo estático');
         // Use static catalog as fallback
         setRealProducts(productsCatalog);
+        setFilteredProducts(productsCatalog);
         setProductsByCategory(productsByCategory || { 'Todas': productsCatalog });
         
         // Extract categories from static catalog
@@ -1153,6 +1233,7 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
       
       // Use static catalog as fallback
       setRealProducts(productsCatalog);
+      setFilteredProducts(productsCatalog);
       setProductsByCategory(productsByCategory || { 'Todas': productsCatalog });
       
       // Extract categories from static catalog
@@ -1198,8 +1279,20 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
       newShelfProducts[shelfIndex] = [];
     }
     
+    // Antes de insertar el producto, añadir información del nivel
+    // Calcular el nivel real (0 = abajo, incrementando hacia arriba)
+    const nivelReal = newShelfProducts.length - 1 - shelfIndex;
+    
+    // Añadir información de nivel al producto
+    const productoConNivel = {
+      ...product,
+      nivelEstante: nivelReal,
+      posicionEnNivel: position,
+      guardadoEnNivel: true
+    };
+    
     // Inserta el producto en la posición indicada
-    newShelfProducts[shelfIndex].splice(position, 0, product);
+    newShelfProducts[shelfIndex].splice(position, 0, productoConNivel);
     
     // Actualiza el estado
     setShelfProducts(newShelfProducts);
@@ -1230,16 +1323,19 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
       setSaveMessage('Guardando configuración...');
       
       // Process shelf products to ensure all required data is present
-      const processedShelfProducts = shelfProducts.map(level => 
-        level.filter(product => product !== null).map((product, index) => ({
+      const processedShelfProducts = shelfProducts.map((level, levelIndex) => {
+        // Recordar que el nivel 0 es el de abajo, pero en la UI se muestra como Charola 1
+        const nivelActual = shelfProducts.length - 1 - levelIndex; // Asegurar que el nivel 0 sea el de abajo
+        
+        return level.filter(product => product !== null).map((product, index) => ({
           ...product,
           // Ensure grid positions are correct
           gridPosition: index,
-          nivelEstante: product.nivelEstante !== undefined ? product.nivelEstante : 0,
+          nivelEstante: nivelActual, // Usar el nivelActual calculado
           posicionEnNivel: product.posicionEnNivel !== undefined ? product.posicionEnNivel : index,
           guardadoEnNivel: true
-        }))
-      );
+        }));
+      });
       
       // Create updated shelf object with correct data
       const updatedShelf = {
@@ -1365,7 +1461,7 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
       <div className="product-selector-modal">
         <div className="product-selector-content">
           <div className="product-selector-header">
-            <h4>Seleccionar Producto para Nivel {targetSlot?.shelfIndex + 1}</h4>
+            <h4>Seleccionar Producto para Charola {shelvesCount - targetSlot?.shelfIndex}</h4>
             <button 
               className="close-button" 
               onClick={() => {
@@ -1414,9 +1510,7 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
 
   // Actualización del renderizado del catálogo de productos
   const renderProductCatalog = () => {
-    const productsToDisplay = selectedCategory === 'Todas' 
-      ? realProducts 
-      : (productsByCategory[selectedCategory] || []);
+    const productsToDisplay = filteredProducts || [];
     
     if (isLoading) {
       return (
@@ -1432,6 +1526,21 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
         <div className="error-message">
           <p>{error}</p>
           <p>Usando catálogo de respaldo</p>
+        </div>
+      );
+    }
+    
+    if (searchQuery && productsToDisplay.length === 0) {
+      return (
+        <div className="no-search-results">
+          <span className="material-icons">search_off</span>
+          <p>No se encontraron productos que coincidan con "{searchQuery}"</p>
+          <button 
+            className="clear-search-button"
+            onClick={() => setSearchQuery('')}
+          >
+            Limpiar búsqueda
+          </button>
         </div>
       );
     }
@@ -2083,6 +2192,36 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
     getTiendaInfo();
   }, [tiendaId]);
 
+  // Actualizar el número de niveles/charolas 
+  const handleCharolasCountChange = (e) => {
+    const newCount = Math.max(1, parseInt(e.target.value) || 1);
+    setShelvesCount(newCount);
+    
+    // Actualizar los arrays de productos y máximos por nivel
+    const updatedShelfProducts = [...shelfProducts];
+    const updatedMaxProducts = [...maxProductsPerLevel];
+    
+    // Añadir nuevos niveles si es necesario
+    if (newCount > updatedShelfProducts.length) {
+      // Para cada nuevo nivel, añadirlo al PRINCIPIO (índice 0)
+      // para que los nuevos niveles sean los de abajo en la UI
+      // pero internamente siguen estando en el orden correcto
+      for (let i = updatedShelfProducts.length; i < newCount; i++) {
+        updatedShelfProducts.unshift([]); // Añadir al inicio (abajo en la UI)
+        updatedMaxProducts.unshift(maxProductsPerShelf); // Añadir al inicio (abajo en la UI)
+      }
+    } else if (newCount < updatedShelfProducts.length) {
+      // Al reducir, eliminar siempre desde el PRINCIPIO (los niveles de abajo en la UI)
+      const countToRemove = updatedShelfProducts.length - newCount;
+      updatedShelfProducts.splice(0, countToRemove); // Eliminar desde el inicio
+      updatedMaxProducts.splice(0, countToRemove); // Eliminar desde el inicio
+    }
+    
+    setShelfProducts(updatedShelfProducts);
+    setMaxProductsPerLevel(updatedMaxProducts);
+    setHasUnsavedChanges(true);
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="planograma-config-fullscreen">
@@ -2172,6 +2311,29 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
           <div className="product-catalog-side">
             <h4>Catálogo de Productos</h4>
             
+            {/* Buscador de productos */}
+            <div className="product-search-container">
+              <div className="search-input-container">
+                <span className="material-icons search-icon">search</span>
+                <input
+                  type="text"
+                  className="product-search-input"
+                  placeholder="Buscar productos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button 
+                    className="clear-search-button"
+                    onClick={() => setSearchQuery('')}
+                    title="Limpiar búsqueda"
+                  >
+                    <span className="material-icons">close</span>
+                  </button>
+                )}
+              </div>
+            </div>
+            
             <div className="category-selector">
               <label>Filtrar por categoría:</label>
               <select 
@@ -2205,47 +2367,37 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
                 Ver en 2D
               </button>
               <button 
-                className="view-mode-button"
-                onClick={() => setShow3DModal(true)}
+                className="view-mode-button view-3d-button"
+                onClick={() => {
+                  setShow3DModal(true);
+                  // Mostrar advertencia sobre posible interferencia
+                  const warning = document.createElement('div');
+                  warning.className = 'temporary-warning';
+                  warning.textContent = 'IMPORTANTE: La vista 3D está desactivada por defecto para evitar problemas al configurar el planograma';
+                  document.body.appendChild(warning);
+                  setTimeout(() => {
+                    if (warning.parentNode) {
+                      warning.parentNode.removeChild(warning);
+                    }
+                  }, 5000);
+                }}
               >
                 <span className="material-icons">view_in_ar</span>
                 Ver en 3D
+                <small className="warning-tag">Desactivado por defecto</small>
               </button>
             </div>
             
             <div className="planogram-config-controls">
               <div className="config-control-group">
-                <label htmlFor="niveles">Número de Niveles</label>
+                <label htmlFor="niveles">Número de Charolas</label>
                 <input 
                   id="niveles" 
                   type="number" 
                   min="1" 
                   max="10" 
                   value={shelvesCount} 
-                  onChange={(e) => {
-                    const newCount = Math.max(1, parseInt(e.target.value) || 1);
-                    setShelvesCount(newCount);
-                    
-                    // Actualizar los arrays de productos y máximos por nivel
-                    const updatedShelfProducts = [...shelfProducts];
-                    const updatedMaxProducts = [...maxProductsPerLevel];
-                    
-                    // Añadir nuevos niveles si es necesario
-                    if (newCount > updatedShelfProducts.length) {
-                      for (let i = updatedShelfProducts.length; i < newCount; i++) {
-                        updatedShelfProducts.push([]);
-                        updatedMaxProducts.push(maxProductsPerShelf);
-                      }
-                    } else if (newCount < updatedShelfProducts.length) {
-                      // Reducir niveles si es necesario
-                      updatedShelfProducts.splice(newCount);
-                      updatedMaxProducts.splice(newCount);
-                    }
-                    
-                    setShelfProducts(updatedShelfProducts);
-                    setMaxProductsPerLevel(updatedMaxProducts);
-                    setHasUnsavedChanges(true);
-                  }}
+                  onChange={handleCharolasCountChange}
                 />
               </div>
               <div className="config-control-group">
@@ -2270,7 +2422,7 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
                 return (
                   <div key={`level-${index}`} className="planogram-level">
                     <div className="level-header">
-                      <h5>Nivel {index + 1}</h5>
+                      <h5>Charola {shelvesCount - index}</h5>
                       <div className="level-controls">
                         <span className="level-product-count">{productCount}/{maxForThisLevel}</span>
                         <input 
@@ -2307,27 +2459,56 @@ const PlanogramaConfig = ({ shelf, onClose, onSave, tiendaId: tiendaIdProp }) =>
         {renderProductSelector()}
         
         {/* 3D View Modal */}
-        {show3DModal && (
-          <div className="product-selector-modal">
-            <div className="modal-3d-content">
-              <div className="modal-3d-header">
-                <h4>Vista 3D de Planograma: {shelf.name}</h4>
-                <button 
-                  className="close-button" 
-                  onClick={() => setShow3DModal(false)}
-                >
-                  <span className="material-icons">close</span>
-                </button>
-              </div>
-              
+        {show3DModal && (          
+          <div className="product-selector-modal">            
+            <div className="modal-3d-content">              
+              <div className="modal-3d-header">                
+                <h4>Vista 3D de Planograma: {shelf.name}</h4>                
+                <div className="modal-3d-actions">                  
+                  <div className="modal-3d-warning">                    
+                    <span className="material-icons">warning</span>                    
+                    <span>El renderizado 3D puede reducir el rendimiento mientras edita</span>                  
+                  </div>                  
+                  <div className="modal-3d-toggle">                    
+                    <label className="toggle-switch">                      
+                      <input                         
+                        type="checkbox"                        
+                        checked={show3DView}                        
+                        onChange={(e) => setShow3DView(e.target.checked)}                      
+                      />                      
+                      <span className="toggle-slider"></span>                    
+                    </label>                    
+                    <span>Activar vista 3D <strong className="view-status">({show3DView ? 'ACTIVA' : 'INACTIVA'})</strong></span>                  
+                  </div>                  
+                  <button                     
+                    className="close-button"                    
+                    onClick={() => {
+                      setShow3DModal(false);
+                      setShow3DView(false); // Ensure 3D view is turned off when closing
+                    }}                  
+                  >                    
+                    <span className="material-icons">close</span>                  
+                  </button>                
+                </div>              
+              </div>                            
               <div className="modal-3d-body">
-                <ShelfPreview3D 
-                  shelf={shelf} 
-                  shelfProducts={shelfProducts} 
-                />
-              </div>
-            </div>
-          </div>
+                {show3DView ? (                
+                  <ShelfPreview3D                  
+                    shelf={shelf}                  
+                    shelfProducts={shelfProducts}                  
+                    isVisible={show3DView}                
+                  />
+                ) : (
+                  <div className="modal-3d-disabled-message">
+                    <span className="material-icons">visibility_off</span>
+                    <h3>Vista 3D desactivada</h3>
+                    <p>Active la vista 3D usando el interruptor superior para visualizar el modelo.</p>
+                    <p className="warning-text">Nota: Activar la vista 3D puede interferir con la configuración de planograma.</p>
+                  </div>
+                )}
+              </div>            
+            </div>          
+          </div>        
         )}
         
         {/* 2D Realistic View Modal */}

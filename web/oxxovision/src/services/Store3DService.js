@@ -211,12 +211,13 @@ async function processShelf(planogramasRef, shelf, currentUser) {
           
           // Crear objeto de producto para guardar
           const productoData = {
-            id: product.id, // ID único del producto para identificarlo
+            id: product.barcode, // ID único del producto para identificarlo
             nombre: product.name,
             color: product.color,
             posicionEnNivel: productIndex,
             gridPosition: product.gridPosition || productIndex,
             productoId: product.id,
+            barcode: product.barcode || product.id, // Add barcode field, fallback to id if not present
             categoria: product.category || 'Sin categoría',
             tamano: product.size || [0.1, 0.1, 0.1],
             imagenUrl: product.imagenUrl || '',
@@ -255,6 +256,7 @@ async function processShelf(planogramasRef, shelf, currentUser) {
           posicion: product.position,
           tamano: product.size,
           productoId: product.id,
+          barcode: product.barcode || product.id, // Add barcode field, fallback to id if not present
           categoria: product.category || 'Sin categoría',
           imagenUrl: product.imagenUrl || '',
           guardadoEnNivel: false
@@ -398,6 +400,7 @@ export const getStore3DConfiguration = async (tiendaId) => {
                   size: productoData.tamano,
                   category: productoData.categoria || 'Sin categoría',
                   productoId: productoData.productoId,
+                  barcode: productoData.barcode || productoData.id, // Add barcode field, fallback to id if not present
                   imagenUrl: productoData.imagenUrl || '',
                   guardadoEnNivel: false
                 };
@@ -419,6 +422,7 @@ export const getStore3DConfiguration = async (tiendaId) => {
                   size: productoData.tamano,
                   category: productoData.categoria || 'Sin categoría',
                   productoId: productoData.productoId,
+                  barcode: productoData.barcode || productoData.id, // Add barcode field, fallback to id if not present
                   imagenUrl: productoData.imagenUrl || '',
                   gridPosition: productoData.gridPosition !== undefined ? productoData.gridPosition : productoData.posicionEnNivel,
                   nivelEstante: levelIndex,
