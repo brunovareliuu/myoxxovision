@@ -15,12 +15,20 @@ import InventarioPage from './pages/InventarioPage';
 import PlanogramasPage from './pages/TasksPage';
 import OxxoAssistant from './pages/OxxoAssistant';
 import OCRPage from './pages/OCRPage';
+import StatisticsPage from './pages/StatisticsPage';
+import AnalysisDetailsPage from './pages/AnalysisDetailsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { verificarTareasAutomaticasSiNecesario } from './firebase';
+import { initDebugUtils } from './utils/debugUtils';
 
 function App() {
   // Verificar y generar tareas automáticas cuando la aplicación inicia
   useEffect(() => {
+    // Inicializar utilidades de depuración
+    if (process.env.NODE_ENV === 'development') {
+      initDebugUtils();
+    }
+    
     const verificarTareas = async () => {
       try {
         console.log('Verificando tareas automáticas al iniciar...');
@@ -181,10 +189,37 @@ function App() {
         />
         {/* Ruta para la detección OCR de planogramas */}
         <Route 
+          path="/oxxo-vision" 
+          element={
+            <ProtectedRoute>
+              <OCRPage />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para OCR (detección desde solicitudes) */}
+        <Route 
           path="/ocr" 
           element={
             <ProtectedRoute>
               <OCRPage />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para las estadísticas de análisis */}
+        <Route 
+          path="/statistics" 
+          element={
+            <ProtectedRoute>
+              <StatisticsPage />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Ruta para ver detalles de un análisis específico */}
+        <Route 
+          path="/analysis/:analysisId" 
+          element={
+            <ProtectedRoute>
+              <AnalysisDetailsPage />
             </ProtectedRoute>
           } 
         />

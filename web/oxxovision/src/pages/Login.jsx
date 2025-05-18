@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { loginUser, getUserData, verificarTareasAutomaticasSiNecesario } from '../firebase';
 import './Auth.css';
 import oxxoImage from '../assets/oxxo1.png';
@@ -11,6 +11,20 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Verificar si hay una ruta a la que redirigir después del inicio de sesión
+  const { from } = location.state || { from: { pathname: '/dashboard' } };
+  
+  useEffect(() => {
+    console.log('Login: Redirección esperada después del login:', from.pathname);
+    
+    // Si hay un estado con la URL de OCR y datos de usuario, mostrar mensaje
+    if (from.pathname === '/ocr' && from.state?.usuario) {
+      console.log('Login: Detectada redirección desde OCR con datos de solicitud');
+      setError('Por favor inicia sesión para continuar evaluando la solicitud');
+    }
+  }, [from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,8 +66,24 @@ const Login = () => {
         // No interrumpir inicio de sesión si hay error
       }
       
-      // Login exitoso, redirigir al dashboard
-      navigate('/dashboard');
+      // Si estamos redirigiendo a OCR, mantener el estado de navegación
+      if (from.pathname === '/ocr' && from.state) {
+        // Actualizar el state para incluir datos del usuario actual
+        const updatedState = {
+          ...from.state,
+          usuario: {
+            ...from.state.usuario,
+            id: user.uid,
+            autenticado: true
+          }
+        };
+        
+        console.log('Login: Redirigiendo de vuelta a OCR con estado:', updatedState);
+        navigate(from.pathname, { state: updatedState, replace: true });
+      } else {
+        // Login exitoso, redirigir a la página original o dashboard
+        navigate(from.pathname || '/dashboard', { replace: true });
+      }
     } catch (err) {
       console.error('Error al iniciar sesión:', err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -79,6 +109,11 @@ const Login = () => {
           </div>
           <h2>Iniciar Sesión</h2>
           {error && <p className="error-message">{error}</p>}
+          {from.pathname === '/ocr' && (
+            <div className="info-message">
+              <p>Inicia sesión para continuar evaluando la solicitud</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Correo Electrónico</label>

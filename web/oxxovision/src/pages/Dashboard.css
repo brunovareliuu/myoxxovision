@@ -23,7 +23,11 @@
 }
 
 .sidebar.collapsed + .main-content {
-  margin-left: 70px;
+  margin-left: 0 !important;
+}
+
+.sidebar.collapsed + .main-content {
+  margin-left: 100px !important;
 }
 
 .content-header {
@@ -86,6 +90,85 @@
   background-color: #c71a14;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(229, 35, 27, 0.3);
+}
+
+/* Estilos para el botón de documentación */
+.docs-button {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.docs-button .material-icons {
+  font-size: 18px;
+}
+
+.docs-button:hover {
+  background-color: #0052a3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+}
+
+/* Estilos para el banner de documentación */
+.documentation-banner {
+  display: flex;
+  align-items: center;
+  background-color: #f0f7ff;
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border-left: 4px solid #0066cc;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.15);
+}
+
+.documentation-banner .material-icons {
+  font-size: 40px;
+  color: #0066cc;
+  margin-right: 15px;
+}
+
+.documentation-banner div {
+  flex: 1;
+}
+
+.documentation-banner h4 {
+  color: #0066cc;
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.documentation-banner p {
+  color: #555;
+  font-size: 14px;
+}
+
+.docs-button-primary {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.docs-button-primary:hover {
+  background-color: #0052a3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
 }
 
 .error-container {
@@ -771,4 +854,39 @@
 /* Ensure the OCR floating button is distinct from any other FABs */
 .ocr-fab {
   bottom: 80px;
+}
+
+.action-card.ai-assistant h4 {
+  color: #673ab7;
+}
+
+.action-card.documentation-card {
+  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.action-card.documentation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 102, 204, 0.4);
+}
+
+.action-card.documentation-card .material-icons {
+  color: white;
+  font-size: 28px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-card.documentation-card h4 {
+  color: white;
+  font-weight: 600;
+}
+
+.action-card.documentation-card p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ocr-button {
+  background-color: #4caf50;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 } 

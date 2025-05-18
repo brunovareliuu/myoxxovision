@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './SolicitudesFotos.css';
-import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useNavigate } from 'react-router-dom';
+
+// URL base64 para imagen de fallback
+const FALLBACK_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAADmElEQVR4Xu3dsW4UQRAG4JnV+RL0dDQ8LW9ATUtFScsTUF6HgpegoKNBVKGjo2JpJEtGshFaZWfndvbLFbG83rn5b/6aWe/tHR4O/kFAQODw8N7/QX9/+PDLZ28vLi72d3d3n5yfnz86OTm5c3R09MDHhMD19fXVzc3Nr/Pz8x9nZ2ffLy8vf798+fLvXcR7FmSWlb3SB44ABa7LC+9ZrxUpXA2umVmvI9bQIbzXbkXKVlWoqrEKW2KrmqqxJbZQVON3VmLrVnY9U2x1s0Kwu1Jh68QqHE5n2aoa/9b23Rt9lZJvTAkMK3JzCjcfhZNXpC55ZQuV2PoNWS9b1+fvWbYuLy8/v3v37seKrVFKsX1ZsVXb0FWsJrTqkM1i6/T09P3r16/fvHr16nuxNcbT+OZqM9lCZZStN2/evH379u1HZYX/m9WfPWuErfEW5V1ybr0lVoAK1/7e3t4wfQjvMtKjh7TrllgMnpkZseYLJrFyLBErx0KsHAuxciwmdWKFWIgVYiFWiIVYIRZpFWLlWIiVYyFWjoVYORZi5VhM6pS4Z8VWjoVYORZi5ViIlWMhVo6FWDkWk7rG3Dt5I+/aYivHQqwcC7FyLMTKsRArx0KsHIt5V/JG3rXFVo6FWDkWYuVYiJVjMfEad0vebcuZ8WQrx0KsHAuxcizEyrEQK8dCrByLSd3m3cg7eaLSNcRWjoVYORZi5ViIlWMhVo6FWDkWk7qTbdyNvJO3KF1DbOVYiJVjIVaOhVg5FmLlWIiVYzGpa9wtebctZ8aTrRwLsXIsxMqxECvHQqwcC7FyLCZ1m3cj7+SJmqIqXENs5ViIlWMhVo6FWDkWYuVYiJVjIVaORb9r5I28xbAotg60mBeZzOfT+jVmgGnXKraKIi2q0mxViLWBUFGr6mBThDV9UleMEBvEGn8NmPGLQLE1WMXWrL9kLpjQtcuXcmRTsBpYU8dZiWW1qqaqxk3Nl49iK8cWimpkZYjvWf/hXz3VntWGK7HKZ2OIqxCrgLXCVUkWbw3/qCtcje0rXIPPDN8TW8P31nh3lv8AzStKV/A0+8QAAAAASUVORK5CYII=';
 
 // Función simple para formatear fecha
 const formatearFecha = (fechaISOString) => {
@@ -24,6 +28,15 @@ const formatearFecha = (fechaISOString) => {
   }
 };
 
+// Función para registrar cuando se recibe una foto
+const logFotoRecibida = (solicitud) => {
+  console.log(`📸 Nueva foto recibida - ${new Date().toLocaleString()}`);
+  console.log(`  • Solicitud: ${solicitud.titulo}`);
+  console.log(`  • Planograma: ${solicitud.planogramaNombre}`);
+  console.log(`  • Completada por: ${solicitud.completadaPor}`);
+  console.log(`  • URL: ${solicitud.fotoUrl.substring(0, 50)}...`);
+};
+
 const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,17 +48,381 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     descripcion: ''
   });
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
-  const [solicitudParaResponder, setSolicitudParaResponder] = useState(null);
-  const [enviando, setEnviando] = useState(false);
   const [planogramas, setPlanogramas] = useState([]);
   const [cargandoPlanogramas, setCargandoPlanogramas] = useState(false);
+  const [mostrarImagenCompleta, setMostrarImagenCompleta] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [solicitudActiva, setSolicitudActiva] = useState(null);
+  const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Cargar solicitudes al montar el componente
+  // Cargar solicitudes y planogramas al montar el componente
   useEffect(() => {
-    cargarSolicitudes();
+    const unsubscribe = configurarSolicitudesListener();
     cargarPlanogramas();
-  }, [tiendaId]);
+    
+    // Limpieza al desmontar
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [tiendaId, esAdmin]);
+
+  // Diagnóstico de imágenes para depuración
+  useEffect(() => {
+    if (solicitudes.length > 0) {
+      const solicitudesConFotos = solicitudes.filter(s => s.fotoUrl);
+      if (solicitudesConFotos.length > 0) {
+        console.log(`🖼️ Diagnóstico: ${solicitudesConFotos.length} solicitudes con fotos detectadas`);
+        
+        // Tipos de URLs que hemos encontrado
+        const urlsHttp = solicitudesConFotos.filter(s => s.fotoUrl.startsWith('http')).length;
+        const urlsFirebase = solicitudesConFotos.filter(s => s.fotoUrl.includes('firebasestorage')).length;
+        const urlsRelativas = solicitudesConFotos.filter(s => !s.fotoUrl.startsWith('http')).length;
+        
+        console.log(`- URLs HTTP(S): ${urlsHttp}`);
+        console.log(`- URLs Firebase Storage: ${urlsFirebase}`);
+        console.log(`- Rutas relativas: ${urlsRelativas}`);
+        
+        // Mostrar ejemplos de cada tipo para diagnóstico
+        if (urlsHttp > 0) {
+          const ejemplo = solicitudesConFotos.find(s => s.fotoUrl.startsWith('http'));
+          console.log(`- Ejemplo URL HTTP: ${ejemplo.fotoUrl.substring(0, 100)}...`);
+        }
+        
+        if (urlsRelativas > 0) {
+          const ejemplo = solicitudesConFotos.find(s => !s.fotoUrl.startsWith('http'));
+          console.log(`- Ejemplo ruta relativa: ${ejemplo.fotoUrl}`);
+        }
+        
+        // Intentar corregir las URLs relativas en segundo plano
+        if (urlsRelativas > 0) {
+          console.log(`🔄 Intentando normalizar ${urlsRelativas} URLs relativas...`);
+          
+          // Solo intenta normalizar las primeras 5 para no sobrecargar
+          const solicitudesParaNormalizar = solicitudesConFotos
+            .filter(s => !s.fotoUrl.startsWith('http'))
+            .slice(0, 5);
+          
+          solicitudesParaNormalizar.forEach(async (solicitud) => {
+            try {
+              const normalizedUrl = await normalizeImageUrl(solicitud.fotoUrl);
+              if (normalizedUrl) {
+                console.log(`✅ URL normalizada para solicitud ${solicitud.id}: ${normalizedUrl.substring(0, 50)}...`);
+                
+                // Actualizar en Firestore también para corregir permanentemente
+                const db = getFirestore();
+                const solicitudRef = doc(db, `tiendas/${tiendaId}/solicitudes/${solicitud.id}`);
+                await updateDoc(solicitudRef, { 
+                  fotoUrl: normalizedUrl,
+                  ultimaActualizacion: serverTimestamp()
+                });
+                
+                // Actualizar estado local
+                setSolicitudes(prev => 
+                  prev.map(s => s.id === solicitud.id ? 
+                    {...s, fotoUrl: normalizedUrl, _normalized: true} : s
+                  )
+                );
+              }
+            } catch (error) {
+              console.error(`❌ Error al normalizar URL para solicitud ${solicitud.id}:`, error);
+            }
+          });
+        }
+      }
+    }
+  }, [solicitudes, tiendaId]);
+
+  // Función para validar URL de imagen
+  const isValidImageUrl = (url) => {
+    if (!url) return false;
+    
+    // Comprobar si la URL ya es una URL completa
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Para URLs de Firebase Storage, verificar que contenga los componentes necesarios
+      if (url.includes('firebasestorage.googleapis.com')) {
+        // Validar que la URL tenga los componentes esenciales de Firebase Storage
+        const hasToken = url.includes('token=') || url.includes('alt=media');
+        const hasPath = url.includes('/o/');
+        
+        if (!hasPath) {
+          console.warn('⚠️ URL de Firebase Storage sin ruta de objeto válida');
+        }
+        
+        if (!hasToken) {
+          console.warn('⚠️ URL de Firebase Storage sin token de acceso o parámetro alt=media');
+          // Podría ser un problema, pero aún intentaremos usarla
+        }
+      }
+      
+      // Verificar extensión de archivo para asegurar que es una imagen
+      const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+      const hasImageExtension = extensions.some(ext => 
+        url.toLowerCase().includes(ext) ||
+        // También verificar en el nombre del objeto para URLs de Firebase Storage
+        (url.includes('/o/') && decodeURIComponent(url.split('/o/')[1].split('?')[0]).toLowerCase().includes(ext))
+      );
+      
+      if (!hasImageExtension) {
+        console.warn('⚠️ URL no tiene extensión de imagen reconocible, pero se intentará usar');
+        // No rechazamos la URL solo por esto, ya que algunas URLs no incluyen la extensión en la URL
+      }
+      
+      return true;
+    }
+    
+    // Si solo es una ruta relativa de Storage, no es válida en este contexto
+    return false;
+  };
+
+  // Función para normalizar URL de imagen (para rutas incompletas de Firebase Storage)
+  const normalizeImageUrl = async (url) => {
+    if (!url) return null;
+    
+    console.log(`🔍 Normalizando URL: ${url}`);
+    
+    // Si ya es una URL completa, retornarla directamente
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Verificar si es una URL de Firebase Storage y agregar timestamp para evitar caché
+      if (url.includes('firebasestorage.googleapis.com')) {
+        // Añadir parámetro para evitar caché si no existe
+        const separator = url.includes('?') ? '&' : '?';
+        const refreshedUrl = `${url}${separator}_t=${Date.now()}`;
+        console.log('✅ URL de Firebase Storage actualizada con timestamp anti-caché');
+        return refreshedUrl;
+      }
+      
+      console.log('✅ La URL ya es completa, no necesita normalización');
+      return url;
+    }
+    
+    try {
+      // Normalizar la ruta de storage
+      let storagePath = url;
+      
+      // Eliminar prefijo gs:// si existe
+      if (storagePath.startsWith('gs://')) {
+        const bucket = storagePath.split('/')[2];
+        storagePath = storagePath.replace(`gs://${bucket}/`, '');
+        console.log(`🔄 Convertida URL gs:// a ruta de Storage: ${storagePath}`);
+      }
+      
+      // Limpiar barras iniciales
+      storagePath = storagePath.replace(/^\/+/, '');
+      
+      // Quitar parámetros de consulta si existen
+      if (storagePath.includes('?')) {
+        storagePath = storagePath.split('?')[0];
+      }
+      
+      console.log(`📂 Ruta normalizada: ${storagePath}`);
+      
+      // Crear referencia al archivo en Storage
+      const storageRef = ref(storage, storagePath);
+      
+      // Intentar obtener URL de descarga con manejo de timeout
+      console.log('⏳ Obteniendo URL de descarga...');
+      
+      // Crear promesa para getDownloadURL con timeout
+      const downloadPromise = getDownloadURL(storageRef);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Tiempo de espera agotado al obtener URL')), 15000)
+      );
+      
+      // Obtener URL con límite de tiempo
+      const downloadUrl = await Promise.race([downloadPromise, timeoutPromise]);
+      
+      if (!downloadUrl) {
+        throw new Error('No se pudo obtener la URL de descarga: respuesta vacía');
+      }
+      
+      // Añadir parámetro para evitar caché
+      const separator = downloadUrl.includes('?') ? '&' : '?';
+      const urlConTimestamp = `${downloadUrl}${separator}_t=${Date.now()}`;
+      
+      console.log(`✅ URL normalizada obtenida con timestamp anti-caché`);
+      return urlConTimestamp;
+    } catch (error) {
+      console.error(`❌ Error al normalizar URL de imagen: ${url}`, error);
+      
+      // Información detallada según el tipo de error
+      let errorInfo = 'Error desconocido';
+      
+      if (error.code === 'storage/object-not-found') {
+        errorInfo = 'El archivo no existe en Firebase Storage';
+      } else if (error.code === 'storage/unauthorized') {
+        errorInfo = 'No tienes permisos para acceder a este archivo';
+      } else if (error.code === 'storage/invalid-url') {
+        errorInfo = 'La URL de Firebase Storage no es válida';
+      } else if (error.code === 'storage/quota-exceeded') {
+        errorInfo = 'Cuota de Firebase Storage excedida';
+      } else if (error.code === 'storage/unauthenticated') {
+        errorInfo = 'Usuario no autenticado para acceder a este recurso';
+      } else if (error.code === 'storage/retry-limit-exceeded') {
+        errorInfo = 'Demasiados intentos de acceso al archivo';
+      } else if (error.code === 'storage/canceled') {
+        errorInfo = 'Operación cancelada';
+      } else if (error.message.includes('timeout') || error.message.includes('agotado')) {
+        errorInfo = 'Tiempo de espera agotado al intentar obtener la URL';
+      }
+      
+      console.error(`📛 Detalle del error: ${errorInfo}`);
+      
+      // Último intento: Si la URL se ve como una ruta de storage, intentar construir una URL directa
+      if (url.includes('fotos_planogramas/') || url.includes('/solicitudes/')) {
+        try {
+          console.log('🛠️ Intentando crear URL directa como última opción...');
+          const cleanPath = url.replace(/^\/+/, '').replace(/\?.*$/, '');
+          const projectId = window.location.hostname.split('.')[0];
+          
+          if (projectId && projectId !== 'localhost') {
+            const directUrl = `https://firebasestorage.googleapis.com/v0/b/${projectId}.appspot.com/o/${encodeURIComponent(cleanPath)}?alt=media&t=${Date.now()}`;
+            console.log(`🔗 URL directa generada: ${directUrl.substring(0, 100)}...`);
+            return directUrl;
+          }
+        } catch (e) {
+          console.error('❌ El intento de crear URL directa también falló', e);
+        }
+      }
+      
+      // Si todos los intentos fallan, retornar null
+      return null;
+    }
+  };
+
+  // Función para configurar el listener de solicitudes
+  const configurarSolicitudesListener = () => {
+    try {
+      setLoading(true);
+      const db = getFirestore();
+      let solicitudesRef;
+      
+      if (esAdmin) {
+        // Administradores ven todas las solicitudes de la tienda
+        solicitudesRef = collection(db, `tiendas/${tiendaId}/solicitudes`);
+      } else {
+        // Empleados ven solicitudes asignadas a ellos o sin asignar
+        solicitudesRef = query(
+          collection(db, `tiendas/${tiendaId}/solicitudes`),
+          where('completada', '==', false)
+        );
+      }
+      
+      // Configurar un listener en lugar de una carga única
+      return onSnapshot(solicitudesRef, async (snapshot) => {
+        const solicitudesData = [];
+        const cambios = {
+          agregadas: [],
+          modificadas: [],
+          eliminadas: []
+        };
+        
+        // Primero recopilamos todos los documentos
+        snapshot.forEach(doc => {
+          const solicitudData = {
+            id: doc.id,
+            ...doc.data(),
+            _normalized: false // Flag para saber si la URL ya está normalizada
+          };
+          solicitudesData.push(solicitudData);
+        });
+        
+        // Actualizamos la UI con los datos básicos inmediatamente
+        // Ordenar por fecha límite (las más próximas primero)
+        solicitudesData.sort((a, b) => {
+          if (!a.fechaLimite) return 1;
+          if (!b.fechaLimite) return -1;
+          return new Date(a.fechaLimite) - new Date(b.fechaLimite);
+        });
+        
+        setSolicitudes(solicitudesData);
+        setLoading(false);
+
+        // Procesar los cambios para logging
+        snapshot.docChanges().forEach((change) => {
+          const solicitud = {
+            id: change.doc.id,
+            ...change.doc.data()
+          };
+          
+          if (change.type === 'added') {
+            cambios.agregadas.push(solicitud);
+          } 
+          else if (change.type === 'modified') {
+            cambios.modificadas.push(solicitud);
+            
+            // Verificar si se ha añadido una foto (completada es true y tiene fotoUrl)
+            if (solicitud.completada && solicitud.fotoUrl) {
+              const solicitudAnterior = solicitudes.find(s => s.id === solicitud.id);
+              // Si es una nueva foto o la foto ha cambiado
+              if (!solicitudAnterior?.fotoUrl || solicitudAnterior.fotoUrl !== solicitud.fotoUrl) {
+                logFotoRecibida(solicitud);
+              }
+            }
+          } 
+          else if (change.type === 'removed') {
+            cambios.eliminadas.push(solicitud);
+          }
+        });
+        
+        // Normalizar las URLs de imágenes en un segundo paso (proceso asíncrono)
+        const solicitudesConFotos = solicitudesData.filter(s => s.fotoUrl && !s._normalized);
+        if (solicitudesConFotos.length > 0) {
+          console.log(`🖼️ Normalizando ${solicitudesConFotos.length} URLs de imágenes...`);
+          
+          const solicitudesNormalizadas = [...solicitudesData];
+          
+          // Procesar cada URL en paralelo
+          await Promise.all(solicitudesConFotos.map(async (solicitud, index) => {
+            try {
+              if (!isValidImageUrl(solicitud.fotoUrl)) {
+                const normalizedUrl = await normalizeImageUrl(solicitud.fotoUrl);
+                if (normalizedUrl) {
+                  // Actualizar la URL normalizada en nuestro array
+                  const idx = solicitudesNormalizadas.findIndex(s => s.id === solicitud.id);
+                  if (idx !== -1) {
+                    solicitudesNormalizadas[idx] = {
+                      ...solicitudesNormalizadas[idx],
+                      fotoUrl: normalizedUrl,
+                      _normalized: true
+                    };
+                  }
+                }
+              } else {
+                // La URL ya está en formato correcto
+                const idx = solicitudesNormalizadas.findIndex(s => s.id === solicitud.id);
+                if (idx !== -1) {
+                  solicitudesNormalizadas[idx]._normalized = true;
+                }
+              }
+            } catch (error) {
+              console.error(`Error al normalizar URL para solicitud ${solicitud.id}:`, error);
+            }
+          }));
+          
+          // Actualizar el estado con las URLs normalizadas
+          setSolicitudes(solicitudesNormalizadas);
+        }
+        
+        // Registrar cambios para debugging
+        if (cambios.agregadas.length > 0) {
+          console.log(`📩 ${cambios.agregadas.length} solicitudes nuevas recibidas`);
+        }
+        if (cambios.modificadas.length > 0) {
+          console.log(`🔄 ${cambios.modificadas.length} solicitudes actualizadas`);
+        }
+      }, (error) => {
+        console.error("Error en el listener de solicitudes:", error);
+        setLoading(false);
+      });
+      
+    } catch (error) {
+      console.error("Error al configurar listener de solicitudes:", error);
+      setLoading(false);
+      return null;
+    }
+  };
 
   // Función para cargar planogramas de la tienda
   const cargarPlanogramas = async () => {
@@ -78,49 +455,6 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     }
   };
 
-  // Función para cargar solicitudes de la tienda desde Firestore
-  const cargarSolicitudes = async () => {
-    try {
-      setLoading(true);
-      const db = getFirestore();
-      let solicitudesRef;
-      
-      if (esAdmin) {
-        // Administradores ven todas las solicitudes de la tienda
-        solicitudesRef = collection(db, `tiendas/${tiendaId}/solicitudes`);
-      } else {
-        // Empleados ven solicitudes asignadas a ellos o sin asignar
-        solicitudesRef = query(
-          collection(db, `tiendas/${tiendaId}/solicitudes`),
-          where('completada', '==', false)
-        );
-      }
-      
-      const snapshot = await getDocs(solicitudesRef);
-      
-      const solicitudesData = [];
-      snapshot.forEach(doc => {
-        solicitudesData.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
-      // Ordenar por fecha límite (las más próximas primero)
-      solicitudesData.sort((a, b) => {
-        if (!a.fechaLimite) return 1;
-        if (!b.fechaLimite) return -1;
-        return new Date(a.fechaLimite) - new Date(b.fechaLimite);
-      });
-      
-      setSolicitudes(solicitudesData);
-    } catch (error) {
-      console.error("Error al cargar solicitudes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -139,13 +473,6 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
           planogramaNombre: planogramaSeleccionado.nombre || 'Planograma sin nombre'
         }));
       }
-    }
-  };
-
-  // Manejar selección de archivo
-  const handleFileChange = (e) => {
-    if (e.target.files[0]) {
-      setArchivoSeleccionado(e.target.files[0]);
     }
   };
 
@@ -173,7 +500,7 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
       // Guardar en Firestore
       const docRef = await addDoc(collection(db, `tiendas/${tiendaId}/solicitudes`), solicitudData);
       
-      // Limpiar formulario y recargar
+      // Limpiar formulario
       setNuevaSolicitud({
         titulo: '',
         planogramaNombre: '',
@@ -182,7 +509,8 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
         descripcion: ''
       });
       setMostrarFormulario(false);
-      cargarSolicitudes();
+      
+      // No es necesario recargar manualmente, el snapshot listener actualizará automáticamente
       
     } catch (error) {
       console.error("Error al crear solicitud:", error);
@@ -192,53 +520,360 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     }
   };
 
-  // Responder a una solicitud con foto
-  const responderSolicitud = async (e) => {
-    e.preventDefault();
-    if (!archivoSeleccionado || !solicitudParaResponder) {
-      alert("Selecciona un archivo de imagen para subir");
+  // Configurar el modal para ver la imagen completa
+  const abrirImagenCompleta = (solicitud) => {
+    setMostrarImagenCompleta(solicitud);
+  };
+
+  // Función para completar solicitud con foto
+  const completarSolicitud = (solicitud) => {
+    setSolicitudActiva(solicitud);
+    
+    // Abrir selector de archivos
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Función para procesar la subida de la foto
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !solicitudActiva) return;
+    
+    try {
+      setSubiendoFoto(true);
+      
+      // Validación del tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        throw new Error('El archivo seleccionado no es una imagen válida');
+      }
+
+      // Validación de tamaño (máximo 5MB)
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      if (file.size > MAX_SIZE) {
+        throw new Error(`La imagen es demasiado grande. Máximo 5MB permitido.`);
+      }
+      
+      // Generar un nombre de archivo único para evitar colisiones
+      const timestamp = Date.now();
+      const uniqueFilename = `foto_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      
+      // Ruta en Storage para la evidencia específica de la tienda y solicitud
+      const storagePath = `evidencias/${tiendaId}/solicitudes/${solicitudActiva.id}/${uniqueFilename}`;
+      
+      // 1. Crear referencia al Storage
+      const storage = getStorage();
+      const storageRef = ref(storage, storagePath);
+      
+      // Crear una copia temporal de la solicitud con estado pendiente
+      const solicitudTemporal = {
+        ...solicitudActiva,
+        _pendiente: true  // Flag para indicar subida en proceso
+      };
+      
+      // Actualizar UI con estado pendiente
+      setSolicitudes(prevSolicitudes => 
+        prevSolicitudes.map(s => 
+          s.id === solicitudActiva.id ? solicitudTemporal : s
+        )
+      );
+      
+      // Subir archivo con metadatos para mejorar CORS
+      const metadata = {
+        contentType: file.type,
+        customMetadata: {
+          'uploaded-by': usuarioActual?.nombre || 'Usuario',
+          'solicitud-id': solicitudActiva.id,
+          'timestamp': timestamp.toString(),
+          'filename': uniqueFilename
+        }
+      };
+      
+      console.log(`Iniciando subida de archivo a: ${storagePath}`);
+      
+      // 2. Subir archivo
+      const snapshot = await uploadBytes(storageRef, file, metadata);
+      console.log('Archivo subido exitosamente a:', snapshot.ref.fullPath);
+      
+      // 3. Obtener URL de descarga
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      console.log('URL de descarga obtenida:', downloadURL);
+      
+      if (!downloadURL) {
+        throw new Error('No se pudo obtener la URL de descarga');
+      }
+      
+      // 4. Actualizar documento en Firestore con la URL completa
+      const db = getFirestore();
+      const solicitudRef = doc(db, `tiendas/${tiendaId}/solicitudes/${solicitudActiva.id}`);
+      
+      const updateData = {
+        completada: true,
+        completadaPor: usuarioActual?.nombre || 'Usuario',
+        fechaCompletada: serverTimestamp(),
+        fotoUrl: downloadURL, // Guardamos la URL completa, no solo la referencia
+        ultimaActualizacion: serverTimestamp(),
+        // Guardar metadatos adicionales para troubleshooting
+        fotoDatos: {
+          rutaStorage: snapshot.ref.fullPath,
+          nombreArchivo: uniqueFilename,
+          tipoContenido: file.type,
+          timestamp: timestamp
+        }
+      };
+      
+      await updateDoc(solicitudRef, updateData);
+      
+      console.log('Solicitud completada exitosamente con URL de foto:', downloadURL);
+      
+      // 5. Verificación adicional: comprobar que la URL se guardó correctamente
+      const solicitudActualizada = await getDoc(solicitudRef);
+      if (solicitudActualizada.exists()) {
+        const datosActualizados = solicitudActualizada.data();
+        if (datosActualizados.fotoUrl !== downloadURL) {
+          console.warn('⚠️ La URL guardada no coincide con la URL generada:');
+          console.warn('- URL generada:', downloadURL);
+          console.warn('- URL guardada:', datosActualizados.fotoUrl);
+        } else {
+          console.log('✅ Verificación exitosa: La URL se guardó correctamente');
+        }
+      }
+      
+      // Limpiar estado
+      e.target.value = '';
+    } catch (error) {
+      console.error('Error al subir foto:', error);
+      alert(`Error al subir la imagen: ${error.message || 'Inténtalo de nuevo.'}`);
+      
+      // Restaurar estado original
+      setSolicitudes(prevSolicitudes => 
+        prevSolicitudes.map(s => 
+          s.id === solicitudActiva.id ? solicitudActiva : s
+        )
+      );
+    } finally {
+      setSubiendoFoto(false);
+      setSolicitudActiva(null);
+    }
+  };
+
+  // Función para descargar la imagen de la solicitud
+  const descargarImagen = async (solicitud) => {
+    if (!solicitud.fotoUrl) {
+      alert('No hay imagen disponible para descargar.');
       return;
     }
     
     try {
-      setEnviando(true);
-      const storage = getStorage();
-      const db = getFirestore();
+      console.log('📥 Iniciando descarga de imagen');
       
-      // Crear referencia en Storage
-      const storageRef = ref(storage, `tiendas/${tiendaId}/solicitudes/${solicitudParaResponder.id}/${Date.now()}_${archivoSeleccionado.name}`);
+      // Obtener URL de la imagen (con preferencia por la ruta de Storage)
+      let urlParaDescargar;
       
-      // Subir archivo
-      await uploadBytes(storageRef, archivoSeleccionado);
+      if (solicitud.fotoDatos && solicitud.fotoDatos.rutaStorage) {
+        // Usar la ruta de Storage para obtener una URL fresca
+        try {
+          const storage = getStorage();
+          const storageRef = ref(storage, solicitud.fotoDatos.rutaStorage);
+          urlParaDescargar = await getDownloadURL(storageRef);
+          console.log('✅ URL de descarga obtenida desde Storage');
+        } catch (error) {
+          console.error('❌ Error al obtener URL desde Storage:', error);
+          urlParaDescargar = solicitud.fotoUrl;
+        }
+      } else {
+        // Usar la URL directa
+        urlParaDescargar = solicitud.fotoUrl;
+      }
       
-      // Obtener URL de descarga
-      const downloadURL = await getDownloadURL(storageRef);
+      // Añadir timestamp para evitar caché
+      urlParaDescargar = urlParaDescargar.includes('?') ? 
+        `${urlParaDescargar}&t=${Date.now()}` : 
+        `${urlParaDescargar}?t=${Date.now()}`;
       
-      // Actualizar documento en Firestore
-      await updateDoc(doc(db, `tiendas/${tiendaId}/solicitudes/${solicitudParaResponder.id}`), {
-        fotoUrl: downloadURL,
-        completada: true,
-        fechaCompletada: new Date(),
-        completadaPor: usuarioActual?.nombre || 'Usuario'
-      });
+      // Crear un enlace temporal para la descarga
+      const nombreArchivo = solicitud.fotoDatos?.nombreArchivo || `imagen_planograma_${solicitud.id}.jpg`;
       
-      // Limpiar y recargar
-      setArchivoSeleccionado(null);
-      setSolicitudParaResponder(null);
-      cargarSolicitudes();
+      // Método 1: Abrir en nueva pestaña (funciona mejor para la mayoría de dispositivos)
+      window.open(urlParaDescargar, '_blank');
+      
+      // Método 2: Usar fetch para descargar (alternativa)
+      setTimeout(async () => {
+        try {
+          // Verificar si el usuario inició descarga con el primer método
+          const respuesta = await fetch(urlParaDescargar);
+          if (!respuesta.ok) throw new Error('Error al obtener la imagen');
+          
+          const blob = await respuesta.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = nombreArchivo;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          console.log('✅ Descarga iniciada correctamente');
+        } catch (e) {
+          console.error('Error en descarga alternativa:', e);
+          // No mostrar error al usuario porque ya se abrió en otra pestaña
+        }
+      }, 1000); // Esperar 1 segundo antes de intentar el segundo método
       
     } catch (error) {
-      console.error("Error al responder solicitud:", error);
-      alert("Error al subir la imagen. Inténtalo de nuevo.");
-    } finally {
-      setEnviando(false);
+      console.error('❌ Error al descargar imagen:', error);
+      alert('Error al descargar la imagen. Por favor, inténtalo de nuevo.');
+    }
+  };
+  
+  // Función simplificada para ir a la pantalla de evaluación
+  const irAEvaluacion = (solicitud) => {
+    if (!solicitud.planogramaId) {
+      alert('No se puede evaluar esta solicitud porque no tiene planograma asociado.');
+      return;
+    }
+    
+    console.log('🔍 Navegando a pantalla de evaluación manual:', solicitud.id);
+    
+    // Navegar directamente a OCR con parámetros mínimos
+    navigate('/ocr', { 
+      state: {
+        tiendaId: tiendaId,
+        planogramaId: solicitud.planogramaId,
+        planogramaNombre: solicitud.planogramaNombre,
+        solicitudId: solicitud.id,
+        solicitudTitulo: solicitud.titulo,
+        seleccionManual: true, // Indicar que se debe seleccionar manualmente
+        timestamp: Date.now()
+      },
+      replace: false
+    });
+  };
+  
+  // Función optimizada para evaluar una solicitud con OCR (mantener por compatibilidad)
+  const evaluarSolicitud = (solicitud) => {
+    if (!solicitud.fotoUrl || !solicitud.planogramaId) {
+      alert('No se puede evaluar esta solicitud porque no tiene imagen o planograma asociado.');
+      return;
+    }
+    
+    console.log('🔍 Iniciando evaluación de solicitud:', solicitud.id);
+    
+    try {
+      // Usar la URL directamente sin intentar convertir a base64
+      const timestamp = Date.now();
+      
+      // Si tiene datos de ruta de storage, usarlos directamente (más eficiente)
+      if (solicitud.fotoDatos && solicitud.fotoDatos.rutaStorage) {
+        console.log('📂 Usando referencia directa a Storage:', solicitud.fotoDatos.rutaStorage);
+        
+        // Obtener la URL directamente de la ruta de Storage
+        const storage = getStorage();
+        const storageRef = ref(storage, solicitud.fotoDatos.rutaStorage);
+        
+        // Mostrar mensaje de procesamiento
+        alert('Preparando imagen para análisis... Espera un momento.');
+        
+        // Obtener URL de descarga fresca para evitar problemas de caché
+        getDownloadURL(storageRef)
+          .then(freshUrl => {
+            console.log('✅ URL fresca obtenida directamente de Storage');
+            
+            // Navegar a OCR con los parámetros
+            navigate('/ocr', { 
+              state: {
+                tiendaId: tiendaId,
+                planogramaId: solicitud.planogramaId,
+                planogramaNombre: solicitud.planogramaNombre,
+                fotoUrl: `${freshUrl}?t=${timestamp}`,
+                solicitudId: solicitud.id,
+                solicitudTitulo: solicitud.titulo,
+                cargarDirecto: true,
+                esReferencia: true,
+                rutaStorage: solicitud.fotoDatos.rutaStorage,
+                timestamp: timestamp
+              },
+              replace: false
+            });
+          })
+          .catch(error => {
+            console.error('❌ Error al obtener URL fresca de Storage:', error);
+            usarUrlDirecta();
+          });
+      } else {
+        // Si no hay datos de ruta de storage, usar la URL directamente
+        console.log('🔗 Usando URL directa de imagen (no hay referencia a Storage)');
+        usarUrlDirecta();
+      }
+      
+      // Función para usar la URL directamente
+      function usarUrlDirecta() {
+        // Mostrar mensaje
+        alert('Preparando imagen para análisis... Espera un momento.');
+        
+        // Añadir timestamp para evitar caché
+        const urlConTimestamp = solicitud.fotoUrl.includes('?') ? 
+          `${solicitud.fotoUrl}&t=${timestamp}` : 
+          `${solicitud.fotoUrl}?t=${timestamp}`;
+          
+        console.log('🔗 Navegando con URL directa:', urlConTimestamp.substring(0, 100) + '...');
+        
+        // Navegar a OCR con la URL directa
+        navigate('/ocr', { 
+          state: {
+            tiendaId: tiendaId,
+            planogramaId: solicitud.planogramaId,
+            planogramaNombre: solicitud.planogramaNombre,
+            fotoUrl: urlConTimestamp,
+            solicitudId: solicitud.id,
+            solicitudTitulo: solicitud.titulo,
+            cargarDirecto: true,
+            timestamp: timestamp
+          },
+          replace: false
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error al procesar la solicitud:', error);
+      
+      // Último recurso: usar la URL directamente
+      alert('Hubo un problema al preparar la imagen. Intentando método alternativo...');
+      
+      const urlFallback = solicitud.fotoUrl.includes('?') ?
+        `${solicitud.fotoUrl}&t=${Date.now()}` :
+        `${solicitud.fotoUrl}?t=${Date.now()}`;
+      
+      navigate('/ocr', { 
+        state: {
+          tiendaId: tiendaId,
+          planogramaId: solicitud.planogramaId,
+          planogramaNombre: solicitud.planogramaNombre,
+          fotoUrl: urlFallback,
+          solicitudId: solicitud.id,
+          solicitudTitulo: solicitud.titulo,
+          esRecuperacion: true,
+          timestamp: Date.now()
+        },
+        replace: false
+      });
     }
   };
 
   return (
     <div className="solicitudes-container">
+      {/* Input oculto para subir archivos */}
+      <input 
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept="image/*"
+        onChange={handleFileUpload}
+      />
+      
       <div className="solicitudes-header">
-        <h3>Solicitudes de Fotos de Planogramas</h3>
+        <h3>Visualización de Fotos de Planogramas</h3>
         
         {esAdmin && (
           <button 
@@ -331,42 +966,43 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
         </div>
       )}
       
-      {/* Modal para responder solicitud */}
-      {solicitudParaResponder && (
+      {/* Modal para ver imagen completa */}
+      {mostrarImagenCompleta && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <h4>Responder Solicitud</h4>
-            <p><strong>{solicitudParaResponder.titulo}</strong></p>
-            <p>Planograma: {solicitudParaResponder.planogramaNombre}</p>
-            
-            <form onSubmit={responderSolicitud} className="respuesta-form">
-              <div className="form-group">
-                <label>Seleccionar Foto:</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleFileChange}
-                  required
+          <div className="modal-content imagen-completa-modal">
+            <h4>{mostrarImagenCompleta.titulo}</h4>
+            <p>Planograma: {mostrarImagenCompleta.planogramaNombre}</p>
+            <div className="imagen-completa-contenedor">
+              {mostrarImagenCompleta.fotoUrl ? (
+                <img 
+                  src={mostrarImagenCompleta.fotoUrl} 
+                  alt="Foto del planograma"
+                  onError={(e) => {
+                    console.error('Error al cargar imagen completa:', mostrarImagenCompleta.fotoUrl);
+                    e.target.onerror = null;
+                    e.target.src = FALLBACK_IMAGE;
+                  }}
                 />
-              </div>
-              
-              <div className="form-actions">
-                <button 
-                  type="button" 
-                  className="cancel-btn"
-                  onClick={() => setSolicitudParaResponder(null)}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="submit-btn"
-                  disabled={enviando}
-                >
-                  {enviando ? 'Subiendo...' : 'Subir Foto'}
-                </button>
-              </div>
-            </form>
+              ) : (
+                <div className="imagen-no-disponible">
+                  <span className="material-icons">image_not_supported</span>
+                  <p>Imagen no disponible</p>
+                </div>
+              )}
+            </div>
+            <div className="detalles-imagen">
+              <p>Subida por: {mostrarImagenCompleta.completadaPor || 'No disponible'}</p>
+              <p>Fecha: {formatearFecha(mostrarImagenCompleta.fechaCompletada)}</p>
+            </div>
+            <div className="form-actions">
+              <button 
+                type="button" 
+                className="cancel-btn"
+                onClick={() => setMostrarImagenCompleta(null)}
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -376,7 +1012,7 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
         <div className="loading">Cargando solicitudes...</div>
       ) : solicitudes.length === 0 ? (
         <div className="no-solicitudes">
-          <p>No hay solicitudes de fotos pendientes</p>
+          <p>No hay solicitudes de fotos disponibles</p>
         </div>
       ) : (
         <div className="solicitudes-list">
@@ -406,28 +1042,95 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
                   <p className="solicitud-descripcion">{solicitud.descripcion}</p>
                 )}
                 
-                {!solicitud.completada && !esAdmin && (
-                  <button 
-                    className="responder-btn"
-                    onClick={() => setSolicitudParaResponder(solicitud)}
-                  >
-                    Subir Foto
-                  </button>
-                )}
-                
                 {solicitud.completada && (
                   <div className="solicitud-status">
                     <i className="material-icons">check_circle</i>
                     <span>Completada por {solicitud.completadaPor} el {formatearFecha(solicitud.fechaCompletada)}</span>
                   </div>
                 )}
+                
+                <div className="solicitud-actions">
+                  {!solicitud.completada && !solicitud._pendiente && !esAdmin && (
+                    <button 
+                      className="completar-btn"
+                      onClick={() => completarSolicitud(solicitud)}
+                      disabled={subiendoFoto}
+                    >
+                      <i className="material-icons">add_a_photo</i>
+                      Subir Foto
+                    </button>
+                  )}
+                  
+                  {/* Botones para descargar y evaluar solicitudes completadas con foto */}
+                  {solicitud.completada && solicitud.fotoUrl && solicitud.planogramaId && (
+                    <div className="solicitud-botones-accion">
+                      <button 
+                        className="descargar-btn"
+                        onClick={() => descargarImagen(solicitud)}
+                      >
+                        <i className="material-icons">download</i>
+                        Descargar
+                      </button>
+                      <button 
+                        className="evaluar-btn"
+                        onClick={() => irAEvaluacion(solicitud)}
+                      >
+                        <i className="material-icons">analytics</i>
+                        Evaluar
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               
-              {solicitud.fotoUrl && (
-                <div className="solicitud-imagen">
-                  <a href={solicitud.fotoUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={solicitud.fotoUrl} alt="Foto del planograma" />
-                  </a>
+              {solicitud.fotoUrl ? (
+                <div className="solicitud-imagen" onClick={() => abrirImagenCompleta(solicitud)}>
+                  <img 
+                    src={solicitud.fotoUrl} 
+                    alt="Foto del planograma" 
+                    className={solicitud._pendiente ? 'imagen-pendiente' : ''}
+                    onError={(e) => {
+                      console.error('Error al cargar miniatura:', solicitud.fotoUrl);
+                      e.target.onerror = null;
+                      e.target.src = FALLBACK_IMAGE;
+                      
+                      // Solo intentar normalizar si aún no se ha normalizado
+                      if (!solicitud._normalized && !isValidImageUrl(solicitud.fotoUrl)) {
+                        normalizeImageUrl(solicitud.fotoUrl).then(normalizedUrl => {
+                          if (normalizedUrl) {
+                            // Actualizar la imagen con la URL normalizada
+                            e.target.src = normalizedUrl;
+                            
+                            // Actualizar el estado para esta solicitud
+                            setSolicitudes(prev => 
+                              prev.map(s => s.id === solicitud.id ? 
+                                {...s, fotoUrl: normalizedUrl, _normalized: true} : s
+                              )
+                            );
+                          }
+                        }).catch(err => {
+                          console.error("Error al normalizar URL en fallback:", err);
+                        });
+                      }
+                    }}
+                  />
+                  {solicitud._pendiente && (
+                    <div className="estado-pendiente">
+                      <span className="material-icons">hourglass_top</span>
+                      <span>Cargando...</span>
+                    </div>
+                  )}
+                  
+                  {/* Botón para ver imagen completa */}
+                  <div className="imagen-overlay">
+                    <span className="material-icons">fullscreen</span>
+                  </div>
+                </div>
+              ) : (
+                /* Mostrar placeholder si no hay foto */
+                <div className="solicitud-imagen-placeholder">
+                  <span className="material-icons">image_not_supported</span>
+                  <span>Sin imagen</span>
                 </div>
               )}
             </div>
@@ -438,4 +1141,4 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
   );
 };
 
-export default SolicitudesFotos; 
+export default SolicitudesFotos;

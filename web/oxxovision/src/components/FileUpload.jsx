@@ -1,13 +1,15 @@
 import React, { useState, useRef } from 'react';
 import './FileUpload.css';
 
-const FileUpload = ({ onFileChange, previewUrl = null, className = '' }) => {
+const FileUpload = ({ onFileChange, previewUrl = null, className = '', disabled = false }) => {
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState(previewUrl);
   const fileInputRef = useRef(null);
 
   // Handle file selection from input
   const handleFileChange = (e) => {
+    if (disabled) return;
+    
     const file = e.target.files[0];
     if (!file) return;
     
@@ -27,6 +29,8 @@ const FileUpload = ({ onFileChange, previewUrl = null, className = '' }) => {
     e.preventDefault();
     e.stopPropagation();
     
+    if (disabled) return;
+    
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
     } else if (e.type === 'dragleave') {
@@ -38,6 +42,12 @@ const FileUpload = ({ onFileChange, previewUrl = null, className = '' }) => {
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (disabled) {
+      setDragActive(false);
+      return;
+    }
+    
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -57,6 +67,7 @@ const FileUpload = ({ onFileChange, previewUrl = null, className = '' }) => {
 
   // Trigger file input click
   const onButtonClick = () => {
+    if (disabled) return;
     fileInputRef.current.click();
   };
 
@@ -69,7 +80,7 @@ const FileUpload = ({ onFileChange, previewUrl = null, className = '' }) => {
 
   return (
     <div 
-      className={`file-upload-container ${className} ${dragActive ? 'drag-active' : ''}`}
+      className={`file-upload-container ${className} ${dragActive ? 'drag-active' : ''} ${disabled ? 'disabled' : ''}`}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
@@ -82,18 +93,24 @@ const FileUpload = ({ onFileChange, previewUrl = null, className = '' }) => {
         className="file-input"
         accept="image/*"
         onChange={handleFileChange}
+        disabled={disabled}
       />
       
       {preview ? (
         <div className="preview-container">
           <img src={preview} alt="Preview" className="image-preview" />
+          {disabled && (
+            <div className="disabled-overlay">
+              <span>Imagen proporcionada por solicitud</span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="upload-label">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
             <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
           </svg>
-          <p>Arrastra una imagen o haz clic para subir</p>
+          <p>{disabled ? 'Subida de imágenes deshabilitada' : 'Arrastra una imagen o haz clic para subir'}</p>
         </div>
       )}
     </div>
