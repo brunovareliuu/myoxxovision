@@ -11,37 +11,24 @@ Esta guía proporciona instrucciones detalladas para instalar y configurar el si
 - Conexión a Internet (para sincronización y funciones avanzadas)
 
 ### Backend (para desarrolladores)
-- Node.js (v14.0 o superior)
-- Python 3.8+ con pip
-- MongoDB
-- PostgreSQL
+- Vite
+- Firebase
 - 8GB RAM mínimo recomendado
 - Sistema operativo: Linux (recomendado), macOS o Windows
 
 ## Instalación de la Aplicación Móvil
 
 ### Para Usuarios
-
-1. **iOS**:
-   - Abra la App Store en su dispositivo
-   - Busque "MyOxxo Vision"
-   - Toque "Obtener" y complete el proceso de descarga
-   - Inicie la aplicación y siga las instrucciones de configuración inicial
-
-2. **Android**:
-   - Abra Google Play Store en su dispositivo
-   - Busque "MyOxxo Vision"
-   - Toque "Instalar" y espere a que se complete la descarga
-   - Abra la aplicación y siga el asistente de configuración
+- Expo Go
+- NodeJs
 
 ### Configuración Inicial
 
 1. Inicie sesión con sus credenciales corporativas
 2. Seleccione su tienda de la lista disponible
 3. Conceda los permisos necesarios (cámara, almacenamiento)
-4. Complete el tutorial interactivo para familiarizarse con la interfaz
 
-## Instalación del Backend (para desarrolladores)
+## Instalación del WebApp
 
 ### Configuración del Entorno
 
