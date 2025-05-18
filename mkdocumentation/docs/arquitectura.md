@@ -55,7 +55,7 @@ Interfaz web para gerentes y administradores que permite:
 
 - **Frontend Móvil**: React Native
 - **Backend**: On device - Buisness Logic
-- **Visión Artificial**: TensorFlow, PyTorch, OpenCV
+- **Visión Artificial**: RoboFlow, Yolo, OpenCV
 - **Almacenamiento**: Firebase
 - **Infraestructura**: Servicios en la nube para escalabilidad
 
