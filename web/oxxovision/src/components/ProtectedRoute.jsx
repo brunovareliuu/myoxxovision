@@ -1,13 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { auth, getUserData } from '../firebase';
 
 const ProtectedRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     console.log('ProtectedRoute: Verificando autenticación');
+    
+    // Verificar si tenemos información de usuario en state (navegación desde otra página)
+    const navigationState = location.state || {};
+    if (navigationState.usuario && navigationState.usuario.id) {
+      console.log('ProtectedRoute: Encontrada información de usuario en estado de navegación:', 
+                 navigationState.usuario.nombre || navigationState.usuario.id);
+      
+      // Guardar datos de sesión manualmente
+      localStorage.setItem('oxxoSessionToken', 'true');
+      localStorage.setItem('oxxoUserId', navigationState.usuario.id);
+      
+      if (navigationState.usuario.nombre) {
+        localStorage.setItem('oxxoUserName', navigationState.usuario.nombre);
+      }
+      
+      if (navigationState.usuario.esAdmin !== undefined) {
+        localStorage.setItem('oxxoUserRole', navigationState.usuario.esAdmin ? 'admin' : 'usuario');
+      }
+      
+      // Considerar al usuario como autenticado
+      setAuthenticated(true);
+      setLoading(false);
+      return;
+    }
     
     // Verificar en localStorage primero (para persistencia de sesión)
     const sessionToken = localStorage.getItem('oxxoSessionToken');
@@ -80,7 +105,7 @@ const ProtectedRoute = ({ children }) => {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [location]);
 
   if (loading) {
     return (
@@ -93,7 +118,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (!authenticated) {
     console.log('ProtectedRoute: Redirigiendo a login por falta de autenticación');
-    return <Navigate to="/login" replace />;
+    // Guardar la ubicación actual para redirigir después del inicio de sesión
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return children;

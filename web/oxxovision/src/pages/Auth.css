@@ -122,6 +122,17 @@
   font-weight: 500;
 }
 
+.info-message {
+  color: #0057a8;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+  padding: 10px;
+  background-color: rgba(0, 87, 168, 0.1);
+  border-radius: 8px;
+  font-weight: 500;
+}
+
 .auth-redirect {
   margin-top: 25px;
   text-align: center;

@@ -16,6 +16,9 @@ const Dashboard = () => {
   const [mensajeStock, setMensajeStock] = useState(null);
   const navigate = useNavigate();
 
+  // URL de la documentación
+  const documentationUrl = 'https://terromn.github.io/oxxo-vision-docs/';
+
   // Simplificado - solo cargar datos una vez al iniciar
   useEffect(() => {
     const loadUserData = async () => {
@@ -182,7 +185,12 @@ const Dashboard = () => {
   };
 
   const navigateToOCR = () => {
-    navigate('/ocr');
+    navigate('/oxxo-vision');
+  };
+
+  // Función para abrir la documentación en una nueva pestaña
+  const openDocumentation = () => {
+    window.open(documentationUrl, '_blank', 'noopener,noreferrer');
   };
 
   if (loading) {
@@ -214,24 +222,23 @@ const Dashboard = () => {
     <div className="layout-container">
       <Sidebar userData={userData} />
       
-      <div className="main-content">
-        <header className="content-header">
-          <h1>Panel de Control</h1>
-          <div className="header-actions">
-            <span className="user-header-info">
-              {userName} ({userRole})
-            </span>
-            <button className="logout-button" onClick={handleLogout}>
-              <span className="material-icons">logout</span>
-              Cerrar Sesión
-            </button>
-          </div>
-        </header>
+            <div className="main-content">        <header className="content-header">          <h1>Panel de Control</h1>          <div className="header-actions">            <button className="docs-button" onClick={openDocumentation}>              <span className="material-icons">menu_book</span>              Documentación            </button>            <span className="user-header-info">              {userName} ({userRole})            </span>            <button className="logout-button" onClick={handleLogout}>              <span className="material-icons">logout</span>              Cerrar Sesión            </button>          </div>        </header>
         
         <div className="dashboard-content">
           <div className="welcome-section">
             <h2>Bienvenido/a, {userName}</h2>
             <p>Sistema de Gestión de Planogramas para tiendas OXXO.</p>
+            <div className="documentation-banner">
+              <span className="material-icons">menu_book</span>
+              <div>
+                <h4>¿Necesitas ayuda?</h4>
+                <p>Consulta nuestra documentación completa</p>
+              </div>
+              <button className="docs-button-primary" onClick={openDocumentation}>
+                Ver Documentación
+              </button>
+              
+            </div>
             {canManageStores && (
               <div className="main-action-buttons">
                 <button className="main-action-button" onClick={navigateToRegistroTienda}>
@@ -344,6 +351,11 @@ const Dashboard = () => {
                 <span className="material-icons">support_agent</span>
                 <h4>Asistente IA</h4>
                 <p>Consulta información sobre planogramas con inteligencia artificial</p>
+              </div>
+              <div className="action-card documentation-card" onClick={openDocumentation}>
+                <span className="material-icons">menu_book</span>
+                <h4>Documentación</h4>
+                <p>Consulta la documentación completa del sistema Oxxo Vision</p>
               </div>
             </div>
           </div>

@@ -13,8 +13,12 @@ import { ref, uploadBytesResumable, getDownloadURL, uploadString } from 'firebas
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import FileUpload from './FileUpload';
 import './OCR.css';
+import { useLocation } from 'react-router-dom';
 
 const OCR = () => {
+  const location = useLocation();
+  const ocrParams = location.state || {};
+  
   // State for form inputs and data
   const [tiendas, setTiendas] = useState([]);
   const [planogramas, setPlanogramas] = useState([]);
@@ -33,6 +37,8 @@ const OCR = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [savedAnalysisId, setSavedAnalysisId] = useState(null);
   const [savedImageUrl, setSavedImageUrl] = useState(null);
+  const [imageLoadingFromUrl, setImageLoadingFromUrl] = useState(false);
+  const [fromSolicitud, setFromSolicitud] = useState(false);
   
   // Referencias para visualización avanzada
   const canvasRef = useRef(null);
@@ -2896,9 +2902,403 @@ const OCR = () => {
     return 'default';
   };
   
+  // Verificar si hay parámetros de navegación al montar el componente
+  useEffect(() => {
+    if (ocrParams && Object.keys(ocrParams).length > 0) {
+      console.log('📥 Parámetros recibidos desde Solicitud de Fotos:', ocrParams);
+      setFromSolicitud(true);
+      
+      // Diagnóstico avanzado
+      if (ocrParams.diagnostico) {
+        console.log('📊 Datos de diagnóstico recibidos:', ocrParams.diagnostico);
+      }
+      
+      // Verificar que el usuario esté autenticado usando los datos recibidos
+      const usuarioInfo = ocrParams.usuario || {};
+      if (!auth.currentUser && usuarioInfo.id) {
+        console.log('👤 Restaurando información de usuario desde parámetros de navegación');
+        // Podemos crear un objeto de usuario personalizado si es necesario
+        // o simplemente usar la información recibida para la lógica de la aplicación
+      }
+      
+      // Si recibimos tiendaId, cargamos esa tienda
+      if (ocrParams.tiendaId) {
+        console.log(`🏪 Tienda ID recibido: ${ocrParams.tiendaId}`);
+        setSelectedTienda(ocrParams.tiendaId);
+      }
+      
+      // Si recibimos planogramaId, lo seleccionamos
+      if (ocrParams.planogramaId) {
+        console.log(`📋 Planograma ID recibido: ${ocrParams.planogramaId}`);
+        setSelectedPlanograma(ocrParams.planogramaId);
+      }
+      
+      // Si recibimos una imagen, cargarla con el método adecuado
+      // pero esperar a que los estados de tienda y planograma estén actualizados
+      setTimeout(() => {
+        if (ocrParams.fotoUrl) {
+          console.log(`🖼️ Datos de imagen recibidos, tipo: ${ocrParams.esBase64 ? 'Base64' : 'URL'}`);
+          
+          // Formato base64 (preformateado por SolicitudesFotos)
+          if (ocrParams.esBase64 || (typeof ocrParams.fotoUrl === 'string' && ocrParams.fotoUrl.startsWith('data:image'))) {
+            console.log('🔄 Procesando imagen en formato Base64');
+            
+            if (ocrParams.diagnostico?.tamanoDatos) {
+              console.log(`📊 Tamaño de datos: ${ocrParams.diagnostico.tamanoDatos}`);
+            }
+            
+            try {
+              // Crear un archivo a partir del Base64
+              const fotoUrl = ocrParams.fotoUrl;
+              const base64Data = fotoUrl.split(',')[1];
+              const mimeType = fotoUrl.split(',')[0].split(':')[1].split(';')[0];
+              
+              // Verificar que los datos base64 sean válidos
+              if (!base64Data || base64Data.length < 100) {
+                throw new Error('Datos base64 inválidos o incompletos');
+              }
+              
+              // Decodificar los datos base64
+              const byteString = atob(base64Data);
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+              
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              
+              // Generar nombre de archivo con timestamp para evitar duplicados
+              const timestamp = Date.now();
+              const randomId = Math.random().toString(36).substring(2, 9);
+              const filename = `imagen_planograma_${timestamp}_${randomId}.jpg`;
+              
+              // Crear objeto File desde los datos binarios
+              const file = new File([ab], filename, { type: mimeType || 'image/jpeg' });
+              
+              // Marcar este archivo como proveniente de base64 para optimizaciones futuras
+              file.fromBase64 = true;
+              file.fromSolicitud = true;
+              
+              // Establecer el archivo y la vista previa
+              setImageFile(file);
+              setImagePreview(fotoUrl);
+              
+              console.log('✅ Imagen Base64 cargada exitosamente');
+              
+              // Si ya tenemos tienda y planograma seleccionados, procesar automáticamente
+              if (selectedTienda && selectedPlanograma) {
+                console.log('▶️ Procesando imagen automáticamente...');
+                // Un pequeño delay para asegurar que el estado se ha actualizado completamente
+                setTimeout(() => {
+                  handleProcessImage();
+                }, 1000);
+              }
+            } catch (error) {
+              console.error('❌ Error al procesar imagen Base64:', error);
+              setError(`Error al procesar la imagen: ${error.message}. Intente subir la imagen manualmente.`);
+              
+              // Si falla Base64 y tenemos una URL original, intentar con ella
+              if (ocrParams.diagnostico?.urlOriginal) {
+                console.log('🔄 Intentando con URL original como fallback');
+                processImageUrl(ocrParams.diagnostico.urlOriginal);
+              }
+            }
+          } else {
+            // Procesar como URL normal
+            console.log('🔄 Procesando imagen desde URL externa');
+            processImageUrl(ocrParams.fotoUrl);
+          }
+        }
+      }, 1200); // Aumentamos ligeramente el tiempo de espera para garantizar que los estados estén actualizados
+    }
+  }, []);
+  
+  // Función para procesar URL de imagen con múltiples estrategias
+  const processImageUrl = (url) => {
+    // Crear una versión de la URL con bypass de caché forzado
+    let urlToLoad = url;
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 9);
+    const cacheBuster = `_nocache=${timestamp}-${randomStr}`;
+    
+    // Añadir parámetro de timestamp para evitar caché
+    urlToLoad = urlToLoad.includes('?') ? 
+      `${urlToLoad}&${cacheBuster}` : 
+      `${urlToLoad}?${cacheBuster}`;
+    
+    console.log('🔄 Cargando URL con bypass de caché forzado');
+    console.log(`📋 URL final a cargar: ${urlToLoad.substring(0, 100)}...`);
+    
+    // Utilizar nuestro método robusto para cargar la imagen
+    cargarImagenDesdeUrl(urlToLoad);
+  };
+  
+  // Añadir un método alternativo para cargar imágenes usando técnicas más robustas
+  const cargarImagenDirecta = async (url, callback) => {
+    // Intentar método directo primero
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    
+    // Añadir token anti-caché aleatorio
+    const cacheBuster = `t=${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const urlWithCache = url.includes('?') ? `${url}&${cacheBuster}` : `${url}?${cacheBuster}`;
+    
+    // Configurar eventos
+    img.onload = () => {
+      console.log('✅ Imagen cargada correctamente mediante método directo');
+      callback(img, null);
+    };
+    
+    img.onerror = async () => {
+      console.log('⚠️ Método directo falló, intentando métodos alternativos...');
+      
+      // Método 2: Usar un dataURL de base64 desde el servidor si disponible
+      try {
+        if (url.includes('firebasestorage.googleapis.com')) {
+          // Extraer la ruta del storage de la URL
+          const pathMatch = url.match(/\/o\/([^?]+)/);
+          if (pathMatch && pathMatch[1]) {
+            // Intentar otra estrategia con getDownloadURL
+            const decodedPath = decodeURIComponent(pathMatch[1]);
+            console.log(`🔄 Intentando método Firebase directo con: ${decodedPath}`);
+            
+            try {
+              const newRef = ref(storage, decodedPath);
+              const freshUrl = await getDownloadURL(newRef);
+              
+              // Crear nueva imagen con la URL fresca
+              const newImg = new Image();
+              newImg.crossOrigin = "anonymous";
+              
+              // Configurar eventos para la nueva imagen
+              newImg.onload = () => {
+                console.log('✅ Imagen cargada correctamente con URL fresca de Firebase');
+                callback(newImg, null);
+              };
+              
+              newImg.onerror = () => {
+                // Método 3: Crear un canvas con color de fondo
+                console.log('⚠️ Todos los métodos fallaron, usando fallback visual');
+                const canvas = document.createElement('canvas');
+                canvas.width = 600;
+                canvas.height = 400;
+                const ctx = canvas.getContext('2d');
+                
+                // Dibujar un fondo gris con mensaje
+                ctx.fillStyle = '#f5f5f5';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#d32f2f';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No se pudo cargar la imagen original', canvas.width/2, canvas.height/2 - 20);
+                ctx.fillStyle = '#555';
+                ctx.font = '16px Arial';
+                ctx.fillText('Se recomienda subir la imagen manualmente', canvas.width/2, canvas.height/2 + 20);
+                
+                // Usar este canvas como fallback
+                callback(canvas, new Error('No se pudo cargar la imagen después de múltiples intentos'));
+              };
+              
+              // Iniciar carga con token anti-caché
+              const freshUrlWithCache = freshUrl.includes('?') ? 
+                `${freshUrl}&_t=${Date.now()}` : 
+                `${freshUrl}?_t=${Date.now()}`;
+              
+              newImg.src = freshUrlWithCache;
+            } catch (fbError) {
+              console.error('❌ Error con método Firebase directo:', fbError);
+              
+              // Si falla, pasar al método de fallback visual
+              const canvas = document.createElement('canvas');
+              canvas.width = 600;
+              canvas.height = 400;
+              const ctx = canvas.getContext('2d');
+              
+              // Dibujar un fondo gris con mensaje
+              ctx.fillStyle = '#f5f5f5';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = '#d32f2f';
+              ctx.font = '20px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText('No se pudo cargar la imagen original', canvas.width/2, canvas.height/2 - 20);
+              ctx.fillStyle = '#555';
+              ctx.font = '16px Arial';
+              ctx.fillText('Se recomienda subir la imagen manualmente', canvas.width/2, canvas.height/2 + 20);
+              
+              // Usar este canvas como fallback
+              callback(canvas, new Error('No se pudo cargar la imagen después de múltiples intentos'));
+            }
+          } else {
+            throw new Error('No se pudo extraer la ruta de la URL de Firebase');
+          }
+        } else {
+          throw new Error('No es una URL de Firebase Storage');
+        }
+      } catch (error) {
+        console.error('❌ Todos los métodos fallaron:', error);
+        
+        // Último recurso: canvas con error visual
+        const canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        
+        // Dibujar un fondo gris con mensaje
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#d32f2f';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No se pudo cargar la imagen original', canvas.width/2, canvas.height/2 - 20);
+        ctx.fillStyle = '#555';
+        ctx.font = '16px Arial';
+        ctx.fillText('Se recomienda subir la imagen manualmente', canvas.width/2, canvas.height/2 + 20);
+        
+        // Usar este canvas como fallback
+        callback(canvas, new Error('No se pudo cargar la imagen después de múltiples intentos'));
+      }
+    };
+    
+    // Iniciar la carga
+    img.src = urlWithCache;
+  };
+
+  // Reemplazar la función de carga de imagen desde URL para usar nuestro nuevo método
+  const cargarImagenDesdeUrl = async (url) => {
+    try {
+      setImageLoadingFromUrl(true);
+      setError(null);
+      
+      console.log(`🔍 Cargando imagen desde URL: ${url.substring(0, 100)}...`);
+      
+      // Verificar si la URL es vacía o inválida
+      if (!url || url.trim() === '') {
+        throw new Error('La URL proporcionada está vacía o es inválida');
+      }
+      
+      // Crear una promesa para usar con nuestro método alternativo
+      const imagenPromise = new Promise((resolve, reject) => {
+        cargarImagenDirecta(url, (resultado, error) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(resultado);
+          }
+        });
+      });
+      
+      // Agregar un timeout global
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Tiempo de espera agotado al cargar la imagen')), 20000);
+      });
+      
+      // Esperar por el resultado o timeout
+      const resultado = await Promise.race([imagenPromise, timeoutPromise]);
+      
+      // Procesar el resultado (puede ser una imagen o un canvas)
+      let dataUrl;
+      let width, height;
+      
+      if (resultado instanceof HTMLCanvasElement) {
+        // Si es un canvas, usar directamente su dataURL
+        dataUrl = resultado.toDataURL('image/jpeg', 0.95);
+        width = resultado.width;
+        height = resultado.height;
+        console.log('ℹ️ Usando canvas como fuente para la imagen');
+      } else {
+        // Si es una imagen, procesarla en un canvas para obtener dataURL
+        const canvas = document.createElement('canvas');
+        width = resultado.width;
+        height = resultado.height;
+        
+        // Limitar dimensiones para mejor rendimiento
+        const MAX_DIMENSION = 1600;
+        if (width > height && width > MAX_DIMENSION) {
+          height = Math.round(height * (MAX_DIMENSION / width));
+          width = MAX_DIMENSION;
+        } else if (height > width && height > MAX_DIMENSION) {
+          width = Math.round(width * (MAX_DIMENSION / height));
+          height = MAX_DIMENSION;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Dibujar la imagen en el canvas
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(resultado, 0, 0, width, height);
+        
+        // Obtener dataURL
+        dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        console.log('✅ Imagen procesada correctamente en canvas');
+      }
+      
+      // Verificar que el dataUrl es válido
+      if (!dataUrl || dataUrl === 'data:,' || dataUrl.length < 100) {
+        throw new Error('No se pudo obtener datos válidos de la imagen');
+      }
+      
+      // Crear objeto File desde dataURL
+      const byteString = atob(dataUrl.split(',')[1]);
+      const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      
+      // Generar nombre de archivo
+      const filename = `imagen_planograma_${Date.now()}.jpg`;
+      
+      // Crear objeto File
+      const file = new File([ab], filename, { type: mimeType });
+      
+      // Establecer el archivo y la vista previa
+      setImageFile(file);
+      setImagePreview(dataUrl);
+      
+      // Almacenar metadatos adicionales para referencia
+      file.sourceUrl = url;
+      file.fromSolicitud = true;
+      
+      console.log('✅ Imagen cargada exitosamente desde URL externa');
+      
+      // Si ya tenemos tienda y planograma, podemos procesar automáticamente
+      if (selectedTienda && selectedPlanograma) {
+        console.log('▶️ Procesando imagen automáticamente...');
+        // Usamos setTimeout para asegurar que el estado se haya actualizado
+        setTimeout(() => {
+          handleProcessImage();
+        }, 800); // Aumentamos un poco el tiempo para asegurar que todo esté listo
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al cargar imagen desde URL:', error);
+      setError(`Error al cargar la imagen: ${error.message}. Intente subir una imagen manualmente o probar con otra URL.`);
+      
+      // Además del mensaje de error, añadir elemento visual para subir imagen manualmente
+      if (!imageFile) {
+        setImagePreview(null);
+      }
+    } finally {
+      setImageLoadingFromUrl(false);
+    }
+  };
+  
   return (
     <div className="ocr-container">
-      <h2>Detección OCR de Planogramas</h2>
+      <h2>Oxxo-Vision</h2>
+      
+      {fromSolicitud && ocrParams.solicitudTitulo && (
+        <div className="solicitud-info-banner">
+          <i className="material-icons">photo_library</i>
+          <div>
+            <h3>Evaluando solicitud: {ocrParams.solicitudTitulo}</h3>
+            <p>Planograma: {ocrParams.planogramaNombre}</p>
+          </div>
+        </div>
+      )}
       
       <div className="form-section">
         <div className="form-group">
@@ -2909,7 +3309,7 @@ const OCR = () => {
               id="tiendaSelect" 
               value={selectedTienda} 
               onChange={handleTiendaChange}
-              disabled={loadingTiendas}
+              disabled={loadingTiendas || fromSolicitud}
             >
               <option value="">Seleccionar una tienda</option>
               {tiendas.map(tienda => (
@@ -2918,6 +3318,9 @@ const OCR = () => {
                 </option>
               ))}
             </select>
+            {fromSolicitud && (
+              <span className="info-badge">Preseleccionada de la solicitud</span>
+            )}
           </div>
         </div>
         
@@ -2929,7 +3332,7 @@ const OCR = () => {
               id="planogramaSelect" 
               value={selectedPlanograma} 
               onChange={handlePlanogramaChange}
-              disabled={!selectedTienda || loadingPlanogramas}
+              disabled={!selectedTienda || loadingPlanogramas || fromSolicitud}
             >
               <option value="">Seleccionar un planograma</option>
               {planogramas.map(planograma => (
@@ -2938,6 +3341,9 @@ const OCR = () => {
                 </option>
               ))}
             </select>
+            {fromSolicitud && (
+              <span className="info-badge">Preseleccionado de la solicitud</span>
+            )}
           </div>
         </div>
         
@@ -3168,12 +3574,26 @@ const OCR = () => {
       </div>
       
       <div className="upload-section">
-        <h3>Sube una imagen del planograma real</h3>
-        <FileUpload 
-          onFileChange={handleFileChange} 
-          previewUrl={imagePreview}
-          className="planogram-upload"
-        />
+        <h3>
+          {fromSolicitud 
+            ? 'Imagen de planograma cargada desde solicitud' 
+            : 'Sube una imagen del planograma real'
+          }
+        </h3>
+        
+        {imageLoadingFromUrl ? (
+          <div className="loading-image-container">
+            <div className="spinner"></div>
+            <p>Cargando imagen desde solicitud...</p>
+          </div>
+        ) : (
+          <FileUpload 
+            onFileChange={handleFileChange} 
+            previewUrl={imagePreview}
+            className="planogram-upload"
+            disabled={fromSolicitud && imagePreview}
+          />
+        )}
         
         <button 
           className="process-button" 
@@ -3200,6 +3620,105 @@ const OCR = () => {
         <div className="error-message">
           <span className="material-icons">error</span>
           <p>{error}</p>
+          {error.includes('Error al cargar la imagen') && fromSolicitud && ocrParams.fotoUrl && (
+            <div className="error-actions">
+              <button 
+                className="retry-button"
+                onClick={() => {
+                  // Crear URL con bypass de caché forzado con doble timestamp y random
+                  const timestamp = Date.now();
+                  const randomStr = Math.random().toString(36).substring(2, 9);
+                  const forcedCacheBuster = `_nocache=${timestamp}-${randomStr}`;
+                  
+                  // Añadir múltiples parámetros para forzar bypass de caché
+                  const urlBase = ocrParams.fotoUrl.split('?')[0]; // Quitar parámetros existentes
+                  const urlWithTimestamp = `${urlBase}?t=${timestamp}&fresh=true&${forcedCacheBuster}`;
+                  
+                  console.log('🔄 Reintentando carga con bypass extremo de caché');
+                  console.log(`📋 URL limpia: ${urlWithTimestamp.substring(0, 100)}...`);
+                  cargarImagenDesdeUrl(urlWithTimestamp);
+                }}
+              >
+                <span className="material-icons">refresh</span>
+                Reintentar carga
+              </button>
+              
+              {/* Opción para usar método alternativo */}
+              <button 
+                className="retry-button"
+                onClick={() => {
+                  // Intentar extraer ruta directa de Firebase Storage
+                  try {
+                    if (ocrParams.fotoUrl.includes('firebasestorage.googleapis.com')) {
+                      // Extraer la ruta del storage de la URL
+                      const pathMatch = ocrParams.fotoUrl.match(/\/o\/([^?]+)/);
+                      if (pathMatch && pathMatch[1]) {
+                        const decodedPath = decodeURIComponent(pathMatch[1]);
+                        console.log(`🔄 Intentando método directo con Firebase Storage API: ${decodedPath}`);
+                        
+                        // Mostrar feedback visual
+                        setError('Intentando método alternativo con Firebase Storage API...');
+                        
+                        // Usar getDownloadURL directamente
+                        const storage = getStorage();
+                        const storageRef = ref(storage, decodedPath);
+                        
+                        getDownloadURL(storageRef)
+                          .then(freshUrl => {
+                            console.log('✅ URL fresca obtenida directamente de Firebase');
+                            // Añadir bypass de caché por si acaso
+                            const timestamp = Date.now();
+                            const urlWithTimestamp = `${freshUrl}&_t=${timestamp}`;
+                            cargarImagenDesdeUrl(urlWithTimestamp);
+                          })
+                          .catch(err => {
+                            console.error('Firebase Storage API falló:', err);
+                            setError(`Error al intentar método alternativo: ${err.message}. Intente subir la imagen manualmente.`);
+                          });
+                      } else {
+                        throw new Error('No se pudo extraer la ruta de Firebase');
+                      }
+                    } else {
+                      throw new Error('No es una URL de Firebase Storage');
+                    }
+                  } catch (error) {
+                    console.error('❌ Error al intentar método alternativo:', error);
+                    setError(`El método alternativo falló: ${error.message}. Intente subir la imagen manualmente.`);
+                  }
+                }}
+              >
+                <span className="material-icons">construction</span>
+                Método alternativo
+              </button>
+              
+              <button 
+                className="view-original-button"
+                onClick={() => {
+                  // Abrir la imagen en una nueva pestaña para verificar si es accesible
+                  window.open(ocrParams.fotoUrl, '_blank');
+                }}
+              >
+                <span className="material-icons">open_in_new</span>
+                Ver imagen original
+              </button>
+              
+              {/* Opción para subir imagen manualmente */}
+              <button 
+                className="retry-button"
+                style={{ backgroundColor: '#4caf50' }}
+                onClick={() => {
+                  // Habilitar carga manual
+                  setFromSolicitud(false);
+                  setImagePreview(null);
+                  setImageFile(null);
+                  setError('Puede subir la imagen manualmente usando el selector de archivos a continuación');
+                }}
+              >
+                <span className="material-icons">file_upload</span>
+                Subir manualmente
+              </button>
+            </div>
+          )}
         </div>
       )}
       

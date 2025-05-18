@@ -18,6 +18,19 @@
   background-color: #f5f5f5;
 }
 
+/* Estilos para el estado deshabilitado */
+.file-upload-container.disabled {
+  cursor: default;
+  border-color: #ddd;
+  background-color: #f0f0f0;
+  opacity: 0.9;
+}
+
+.file-upload-container.disabled:hover {
+  border-color: #ddd;
+  background-color: #f0f0f0;
+}
+
 .drag-active {
   border-color: #e5231b;
   background-color: rgba(229, 35, 27, 0.05);
@@ -67,6 +80,31 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+/* Overlay para imágenes deshabilitadas */
+.disabled-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  pointer-events: none;
+}
+
+.disabled-overlay span {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 8px 16px;
+  border-radius: 4px;
+  max-width: 80%;
 }
 
 /* Estilos para botón de eliminar imagen */

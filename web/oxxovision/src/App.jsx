@@ -196,6 +196,15 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        {/* Ruta para OCR (detección desde solicitudes) */}
+        <Route 
+          path="/ocr" 
+          element={
+            <ProtectedRoute>
+              <OCRPage />
+            </ProtectedRoute>
+          } 
+        />
         {/* Ruta para las estadísticas de análisis */}
         <Route 
           path="/statistics" 
