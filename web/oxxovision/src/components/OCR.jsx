@@ -5,9 +5,12 @@ import {
   obtenerTiendas,
   obtenerPlanogramas,
   obtenerProducto,
-  storage
+  storage,
+  db,
+  auth
 } from '../firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, uploadString } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import FileUpload from './FileUpload';
 import './OCR.css';
 
@@ -26,6 +29,10 @@ const OCR = () => {
   const [loadingTiendas, setLoadingTiendas] = useState(false);
   const [loadingPlanogramas, setLoadingPlanogramas] = useState(false);
   const [productNames, setProductNames] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savedAnalysisId, setSavedAnalysisId] = useState(null);
+  const [savedImageUrl, setSavedImageUrl] = useState(null);
   
   // Referencias para visualización avanzada
   const canvasRef = useRef(null);
@@ -303,6 +310,52 @@ const OCR = () => {
     const discrepancias = comparacion?.discrepancias || [];
     const shelfAlignment = comparacion?.alineamiento || []; // Obtener alineamiento si está disponible
     
+    // Dibujar los límites de los estantes primero (para que queden detrás de los productos)
+    if (barcodesArray && barcodesArray.length > 0) {
+      const shelfBoundaryHeight = canvas.height / barcodesArray.length;
+      
+      // Dibujar cada estante
+      for (let i = 0; i <= barcodesArray.length; i++) {
+        const y = i * shelfBoundaryHeight;
+        
+        // Dibujar línea horizontal para el límite del estante
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)'; // Línea negra semi-transparente
+        ctx.lineWidth = 2.5; // Línea gruesa
+        ctx.setLineDash([0]); // Línea sólida
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+        
+        // Si no es el último estante, dibujar el área del estante con un fondo semi-transparente
+        if (i < barcodesArray.length) {
+          ctx.fillStyle = 'rgba(245, 245, 245, 0.1)'; // Fondo gris muy claro y casi transparente
+          ctx.fillRect(0, y, canvas.width, shelfBoundaryHeight);
+          
+          // Añadir etiqueta de estante
+          const shelfNumber = barcodesArray.length - i; // Invertir para que estante 1 esté abajo
+          ctx.font = 'bold 14px Arial';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+          ctx.fillText(`Estante ${shelfNumber}`, 10, y + 20);
+        }
+      }
+      
+      // Dibujar límites verticales (izquierda y derecha)
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.lineWidth = 2;
+      
+      // Borde izquierdo
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, canvas.height);
+      
+      // Borde derecho
+      ctx.moveTo(canvas.width, 0);
+      ctx.lineTo(canvas.width, canvas.height);
+      
+      ctx.stroke();
+    }
+    
     // Crear mapa de discrepancias para colorear
     const discrepancyMap = new Map();
     discrepancias.forEach(disc => {
@@ -312,9 +365,42 @@ const OCR = () => {
     
     // Dibujar bounding boxes si están disponibles y habilitados
     if (showDetectionBoxes && predictions && predictions.length > 0) {
+      // Filtrar predicciones con baja confianza para evitar ruido visual
+      const filteredPredictions = predictions.filter(pred => 
+        pred.confidence >= 0.25  // Solo mostrar predicciones con confianza significativa
+      );
+      
       // Dibujar cada predicción
-      predictions.forEach(pred => {
+      filteredPredictions.forEach(pred => {
         const { x1, y1, x2, y2, class: className, confidence } = pred;
+        
+        // Calcular el ancho y alto del producto
+        const boxWidth = x2 - x1;
+        const boxHeight = y2 - y1;
+        
+        // Mejorar posicionamiento horizontal - desplazar más a la derecha
+        // Ajuste asimétrico para mover más hacia la derecha
+        const horizontalAdjustmentLeft = boxWidth * 0.10;  // 10% del ancho como ajuste izquierdo
+        const horizontalAdjustmentRight = boxWidth * 0.05; // 5% del ancho como ajuste derecho
+        const verticalAdjustment = boxHeight * 0.05;   // 5% del alto como ajuste vertical
+        
+        // Aplicar ajustes para centrar mejor el cuadro alrededor del producto
+        // Mover más a la derecha reduciendo el ajuste izquierdo
+        const adjustedX1 = x1 + horizontalAdjustmentLeft;
+        const adjustedY1 = y1 + verticalAdjustment;
+        const adjustedX2 = x2 - horizontalAdjustmentRight;
+        const adjustedY2 = y2 - verticalAdjustment;
+        
+        // Asegurar dimensiones mínimas para el cuadro
+        const minBoxSize = 18; // tamaño mínimo para visibilidad (aumentado)
+        const finalWidth = Math.max(minBoxSize, adjustedX2 - adjustedX1);
+        const finalHeight = Math.max(minBoxSize, adjustedY2 - adjustedY1);
+        
+        // Mantener el cuadro centrado si se aplica el tamaño mínimo
+        const finalX1 = finalWidth === minBoxSize ? 
+            (adjustedX1 + adjustedX2 - minBoxSize) / 2 : adjustedX1;
+        const finalY1 = finalHeight === minBoxSize ? 
+            (adjustedY1 + adjustedY2 - minBoxSize) / 2 : adjustedY1;
         
         // Determinar color basado en confianza o discrepancia
         let boxColor;
@@ -323,33 +409,63 @@ const OCR = () => {
           const isDiscrepancy = discrepancias.some(d => 
             d.encontrado === className || d.esperado === className
           );
-          boxColor = isDiscrepancy ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 255, 0, 0.7)';
+          boxColor = isDiscrepancy ? 'rgba(227, 6, 19, 0.95)' : 'rgba(0, 170, 0, 0.95)'; // Mayor opacidad para mejor visibilidad
         } else {
-          // Color basado en confianza
-          const alpha = 0.7;
-          if (confidence > 0.7) {
-            boxColor = `rgba(0, 255, 0, ${alpha})`;  // Verde para alta confianza
-          } else if (confidence > 0.5) {
-            boxColor = `rgba(255, 255, 0, ${alpha})`;  // Amarillo para confianza media
-          } else {
-            boxColor = `rgba(255, 165, 0, ${alpha})`;  // Naranja para baja confianza
-          }
+          // Color basado en confianza - escala desde rojo (baja) a verde (alta)
+          const greenIntensity = Math.min(255, Math.floor(confidence * 255 * 1.5));
+          const redIntensity = Math.min(255, Math.floor((1 - confidence) * 255 * 1.5));
+          boxColor = `rgba(${redIntensity}, ${greenIntensity}, 0, 0.95)`;
         }
         
-        // Dibujar rectángulo
+        // Dibujar rectángulo con líneas aún más gruesas
         ctx.strokeStyle = boxColor;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        ctx.lineWidth = Math.max(3.5, Math.min(5, confidence * 6)); // Líneas mucho más gruesas
         
-        // Dibujar fondo para etiqueta
+        // Dibujar con efecto de doble línea para mayor visibilidad
+        // Primero un contorno exterior más oscuro
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.lineWidth += 1;
+        ctx.strokeRect(finalX1, finalY1, finalWidth, finalHeight);
+        
+        // Luego el contorno interior con el color original
+        ctx.strokeStyle = boxColor;
+        ctx.lineWidth -= 1;
+        ctx.strokeRect(finalX1, finalY1, finalWidth, finalHeight);
+        
+        // Dibujar fondo para etiqueta - más compacto
         if (showLabels) {
-          ctx.fillStyle = boxColor;
-          ctx.fillRect(x1, y1 - 20, 120, 20);
+          const fontSize = Math.max(10, Math.min(13, confidence * 15)); // Tamaño de fuente ligeramente mayor
+          ctx.font = `bold ${fontSize}px Arial`;
+          
+          // Medir el ancho del texto para ajustar tamaño del fondo
+          const confText = `${Math.round(confidence * 100)}%`;
+          const textWidth = Math.max(
+            ctx.measureText(className).width,
+            ctx.measureText(confText).width
+          );
+          
+          const labelPadding = 4;
+          const labelHeight = fontSize * 2 + labelPadding * 2;
+          const labelWidth = textWidth + labelPadding * 2;
+          
+          // Fondo semi-transparente para etiqueta
+          ctx.fillStyle = boxColor.replace('0.95', '0.98');
+          // Dibujar rectángulo con esquinas redondeadas
+          const labelRadius = 3;
+          ctx.beginPath();
+          ctx.roundRect(
+            finalX1, 
+            finalY1 - labelHeight - 2, 
+            labelWidth, 
+            labelHeight, 
+            labelRadius
+          );
+          ctx.fill();
           
           // Dibujar texto
           ctx.fillStyle = 'white';
-          ctx.font = '12px Arial';
-          ctx.fillText(`${className} (${Math.round(confidence * 100)}%)`, x1 + 5, y1 - 5);
+          ctx.fillText(className, finalX1 + labelPadding, finalY1 - labelHeight + fontSize + labelPadding);
+          ctx.fillText(confText, finalX1 + labelPadding, finalY1 - labelPadding);
         }
       });
     }
@@ -408,13 +524,15 @@ const OCR = () => {
           planShelfIndex = shelfAlignment.findIndex(idx => idx === shelfIndex);
         }
         
-        // Calcular ancho de cada producto
+        // Calcular ancho de cada producto - más preciso
         const productWidth = canvas.width / shelf.length;
         
-        // Redimensionar para mejor precisión por producto
-        // Para ajustar el tamaño y dar una mejor representación visual de los productos
-        const productPadding = Math.max(2, Math.floor(productWidth * 0.05)); // 5% de padding
-        const productHeight = Math.max(shelfHeight * 0.85, 10); // 85% de altura, mínimo 10px
+        // Ajustar el espaciado para una distribución más uniforme
+        // Incrementar espaciado y desplazar ligeramente a la derecha
+        const spacingFactor = 0.12; // 12% de espaciado entre productos
+        const rightShift = productWidth * 0.05; // Desplazamiento a la derecha de un 5%
+        const productPadding = Math.max(3, Math.floor(productWidth * spacingFactor)); // Mínimo 3px de padding
+        const productHeight = Math.max(shelfHeight * 0.92, 12); // 92% de altura, mínimo 12px
         const productTopPadding = (shelfHeight - productHeight) / 2; // Centrar verticalmente
         
         // Para cada producto
@@ -433,140 +551,322 @@ const OCR = () => {
           const productPredictions = shelfPredictions.filter(pred => {
             // Calcular el centro horizontal de la predicción
             const predCenter = pred.x1 + (pred.x2 - pred.x1) / 2;
-            // Calcular el rango horizontal para este producto
-            const prodLeft = productIndex * productWidth;
-            const prodRight = (productIndex + 1) * productWidth;
+            // Calcular el rango horizontal para este producto con más margen a la derecha
+            const prodLeft = productIndex * productWidth - productWidth * 0.05; // Ampliar margen izquierdo
+            const prodRight = (productIndex + 1) * productWidth + productWidth * 0.10; // Ampliar margen derecho aún más
             // Verificar si el centro de la predicción está dentro del rango
             return predCenter >= prodLeft && predCenter < prodRight;
           });
           
-          // Si hay predicciones para este producto, ajustar dimensiones
-          let x = productIndex * productWidth + productPadding;
-          let y = visualIndex * shelfHeight + productTopPadding;
+          // Calcular posición base del producto con mejor distribución espacial
+          // Desplazar ligeramente hacia la derecha
+          const productBaseX = productIndex * productWidth + rightShift;
+          const productBaseY = visualIndex * shelfHeight;
+          
+          // Ajustar x e y para centrar el producto en su espacio
+          let x = productBaseX + productPadding;
+          let y = productBaseY + productTopPadding;
+          
+          // Calcular ancho y alto con espaciado mejorado
           let adjustedWidth = productWidth - (productPadding * 2);
           let adjustedHeight = productHeight;
           
+          // Si hay predicciones para este producto, refinar dimensiones usando esos datos
           if (productPredictions.length > 0) {
-            // Usar dimensiones más precisas si hay predicciones disponibles
-            // Calcular promedio de todas las predicciones que caen en esta posición
-            const avgX1 = productPredictions.reduce((sum, p) => sum + p.x1, 0) / productPredictions.length;
-            const avgY1 = productPredictions.reduce((sum, p) => sum + p.y1, 0) / productPredictions.length;
-            const avgX2 = productPredictions.reduce((sum, p) => sum + p.x2, 0) / productPredictions.length;
-            const avgY2 = productPredictions.reduce((sum, p) => sum + p.y2, 0) / productPredictions.length;
+            // Calcular dimensiones más precisas basadas en el promedio de las predicciones
+            // con ponderación según confianza
+            let totalConfidence = 0;
+            let weightedX1 = 0, weightedY1 = 0, weightedX2 = 0, weightedY2 = 0;
             
-            // Restringir a los límites del producto en el estante
-            const prodLeft = productIndex * productWidth;
-            const prodRight = (productIndex + 1) * productWidth;
+            productPredictions.forEach(p => {
+              const weight = p.confidence;
+              totalConfidence += weight;
+              weightedX1 += p.x1 * weight;
+              weightedY1 += p.y1 * weight;
+              weightedX2 += p.x2 * weight;
+              weightedY2 += p.y2 * weight;
+            });
+            
+            if (totalConfidence > 0) {
+              // Obtener promedio ponderado
+              const avgX1 = weightedX1 / totalConfidence;
+              const avgY1 = weightedY1 / totalConfidence;
+              const avgX2 = weightedX2 / totalConfidence;
+              const avgY2 = weightedY2 / totalConfidence;
+              
+              // Calcular ancho y alto del producto detectado
+              const detectedWidth = avgX2 - avgX1;
+              const detectedHeight = avgY2 - avgY1;
+              
+              // Determinar el tipo de producto basado en la relación de aspecto
+              const productType = determineProductType(
+                { x1: avgX1, y1: avgY1, x2: avgX2, y2: avgY2 }, 
+                barcode
+              );
+              
+              // Ajustar las dimensiones según el tipo de producto
+              let aspectRatioAdjustment = 1.0;
+              let heightExpansion = 1.0;
+              
+              switch (productType) {
+                case 'bottle':
+                  // Las botellas suelen ser altas, asegurarse de capturar toda la altura
+                  aspectRatioAdjustment = 0.9; // Reducir ancho un poco
+                  heightExpansion = 1.15;      // Aumentar altura
+                  break;
+                case 'box':
+                  // Las cajas son más cuadradas
+                  aspectRatioAdjustment = 1.05; // Ligeramente más ancho
+                  heightExpansion = 1.05;       // Ligeramente más alto
+                  break;
+                case 'can':
+                  // Las latas son más circulares
+                  aspectRatioAdjustment = 1.0;
+                  heightExpansion = 1.0;
+                  break;
+                case 'packet':
+                  // Los paquetes son rectangulares
+                  aspectRatioAdjustment = 1.1;  // Más ancho
+                  heightExpansion = 0.95;       // Ligeramente menos alto
+                  break;
+                case 'flat':
+                  // Productos planos y anchos
+                  aspectRatioAdjustment = 1.15; // Más ancho
+                  heightExpansion = 0.9;        // Menos alto
+                  break;
+                default:
+                  // Ajuste por defecto
+                  aspectRatioAdjustment = 1.0;
+                  heightExpansion = 1.0;
+              }
+              
+              // Ajuste para centrado horizontal - desplazar más a la derecha
+              const horizontalShift = detectedWidth * 0.08; // 8% de ajuste para desplazar a la derecha
+              
+              // Limitar a los bordes del espacio asignado para este producto
+              // con un margen de tolerancia para mejor precisión
+              const tolerance = productWidth * 0.20; // 20% de tolerancia
+              
+              // Calcular dimensiones ajustadas según el tipo de producto
+              const adjustedWidthByType = detectedWidth * aspectRatioAdjustment;
+              const adjustedHeightByType = detectedHeight * heightExpansion;
+              
+              // Calcular el centro del producto para posicionamiento
+              const centerX = (avgX1 + avgX2) / 2;
+              const centerY = (avgY1 + avgY2) / 2;
+              
+              // Calcular nuevas coordenadas basadas en el centro y las dimensiones ajustadas
+              const adjustedX1 = centerX - (adjustedWidthByType / 2);
+              const adjustedY1 = centerY - (adjustedHeightByType / 2);
+              const adjustedX2 = centerX + (adjustedWidthByType / 2);
+              const adjustedY2 = centerY + (adjustedHeightByType / 2);
+              
+              // Asegurar que el producto se mantenga dentro de su espacio asignado pero permitiendo
+              // cierta flexibilidad para una visualización más precisa
+              // Aplicar más desplazamiento a la derecha reduciendo el ajuste izquierdo
+              const minX = Math.max(
+                productBaseX - tolerance * 0.7, 
+                adjustedX1 - horizontalShift * 0.5
+              );
+              const maxX = Math.min(
+                productBaseX + productWidth + tolerance * 1.3, 
+                adjustedX2 + horizontalShift * 1.5
+              );
+              
+              // Aplicar restricciones estrictas para que los productos estén contenidos dentro de los límites del estante
             const shelfTop = visualIndex * shelfHeight;
             const shelfBottom = (visualIndex + 1) * shelfHeight;
             
-            // Aplicar límites y ajustar tamaños
-            x = Math.max(prodLeft + productPadding, avgX1);
-            y = Math.max(shelfTop + productPadding, avgY1);
-            const x2 = Math.min(prodRight - productPadding, avgX2);
-            const y2 = Math.min(shelfBottom - productPadding, avgY2);
-            
-            adjustedWidth = Math.max(10, x2 - x); // Mínimo 10px de ancho
-            adjustedHeight = Math.max(10, y2 - y); // Mínimo 10px de alto
+              // Aplicar márgenes internos para asegurar que los productos no toquen los bordes del estante
+              const topMargin = 5; // 5px de margen desde el borde superior del estante
+              const bottomMargin = 5; // 5px de margen desde el borde inferior del estante
+              
+              // Restringir la posición Y al área delimitada del estante, respetando los márgenes
+              // Priorizar mantener el producto dentro del estante sobre mantener sus proporciones originales
+              const minY = Math.max(shelfTop + topMargin, adjustedY1);
+              const maxY = Math.min(shelfBottom - bottomMargin, adjustedY2);
+              
+              // Aplicar límites mejorados
+              x = minX;
+              y = minY;
+              adjustedWidth = maxX - minX;
+              adjustedHeight = maxY - minY;
+              
+              // Asegurar dimensiones mínimas para visibilidad, adaptadas al tipo de producto
+              const minWidthByType = productType === 'bottle' ? 15 : 20;
+              const minHeightByType = productType === 'bottle' ? 25 : 18;
+              
+              adjustedWidth = Math.max(minWidthByType, adjustedWidth);
+              adjustedHeight = Math.max(minHeightByType, adjustedHeight);
+              
+              // Si el producto es muy pequeño, centrar en el espacio detectado
+              if (adjustedWidth < productWidth * 0.3) {
+                const center = (avgX1 + avgX2) / 2;
+                x = center - (adjustedWidth / 2) + horizontalShift; // Desplazar a la derecha
+              }
+              
+              // Ajustar dimensiones según tipo, pero siempre respetando los límites del estante
+              // Calcular altura máxima disponible en este espacio del estante
+              const maxAvailableHeight = shelfBottom - shelfTop - (topMargin + bottomMargin);
+              
+              // Para productos tipo botella, ajustar proporciones pero dentro del estante
+              if (productType === 'bottle') {
+                // Ideal: altura = 2 * ancho, pero limitado por el espacio del estante
+                const idealHeight = adjustedWidth * 2;
+                // Limitar al espacio disponible
+                adjustedHeight = Math.min(idealHeight, maxAvailableHeight);
+                // Centrar verticalmente dentro del espacio disponible
+                y = shelfTop + topMargin + (maxAvailableHeight - adjustedHeight) / 2;
+              }
+              
+              // Para productos tipo caja, mantener una relación de aspecto más equilibrada
+              else if (productType === 'box') {
+                // Relación máxima altura/ancho = 1.5
+                if (adjustedHeight > adjustedWidth * 1.5) {
+                  adjustedHeight = Math.min(adjustedWidth * 1.5, maxAvailableHeight);
+                }
+                // Centrar verticalmente
+                y = shelfTop + topMargin + (maxAvailableHeight - adjustedHeight) / 2;
+              }
+              
+              // Para otros tipos de productos, asegurar que estén dentro del estante
+              else {
+                // Limitar al espacio disponible
+                if (adjustedHeight > maxAvailableHeight) {
+                  adjustedHeight = maxAvailableHeight;
+                  // Centrar verticalmente
+                  y = shelfTop + topMargin;
+                }
+              }
+              
+              // Verificación final para asegurar que el producto se mantiene dentro del estante
+              if (y + adjustedHeight > shelfBottom - bottomMargin) {
+                // Si aún sobresale, reducir altura para que encaje
+                adjustedHeight = shelfBottom - bottomMargin - y;
+              }
+            }
           }
           
-          // Color basado en tipo de discrepancia
+          // Color basado en tipo de discrepancia - colores más intensos
           let overlayColor;
           if (hasDiscrepancy) {
             const disc = discrepancyMap.get(key);
             if (disc.encontrado === 'vacío') {
-              overlayColor = 'rgba(255, 0, 0, 0.3)'; // Rojo - Falta producto
+              overlayColor = 'rgba(227, 6, 19, 0.40)'; // Rojo OXXO - Falta producto
             } else if (disc.esperado === 'vacío') {
-              overlayColor = 'rgba(255, 165, 0, 0.3)'; // Naranja - Producto no esperado
+              overlayColor = 'rgba(255, 165, 0, 0.40)'; // Naranja - Producto no esperado
             } else {
-              overlayColor = 'rgba(255, 255, 0, 0.3)'; // Amarillo - Producto incorrecto
+              overlayColor = 'rgba(255, 205, 0, 0.40)'; // Amarillo - Producto incorrecto
             }
           } else {
             // Colorear mejor productos correctos
             overlayColor = barcode === 'EMPTY' ? 
-              'rgba(200, 200, 200, 0.2)' : // Gris claro para vacíos
-              'rgba(0, 255, 0, 0.1)';      // Verde para productos correctos
+              'rgba(200, 200, 200, 0.30)' : // Gris claro para vacíos
+              'rgba(0, 170, 0, 0.30)';      // Verde para productos correctos
           }
           
-          // Dibujar overlay con bordes más claros y redondeados
+          // Dibujar overlay con bordes más gruesos y redondeados
           ctx.fillStyle = overlayColor;
           ctx.beginPath();
-          const cornerRadius = 4;
+          const cornerRadius = 4; // Bordes redondeados ligeramente más grandes
           ctx.roundRect(x, y, adjustedWidth, adjustedHeight, cornerRadius);
           ctx.fill();
           
-          // Dibujar borde
-          ctx.strokeStyle = hasDiscrepancy ? 
-            'rgba(255, 0, 0, 0.6)' : 
-            (barcode === 'EMPTY' ? 'rgba(150, 150, 150, 0.4)' : 'rgba(0, 200, 0, 0.4)');
-          ctx.lineWidth = hasDiscrepancy ? 2 : 1;
+          // Dibujar borde más grueso con mayor contraste
+          const borderColor = hasDiscrepancy ? 
+            'rgba(227, 6, 19, 0.90)' : // Rojo OXXO con mayor opacidad
+            (barcode === 'EMPTY' ? 'rgba(150, 150, 150, 0.80)' : 'rgba(0, 150, 0, 0.80)'); // Mayor opacidad
+          
+          // Dibujar borde con efecto de doble línea para mayor visibilidad
+          // Primero un contorno exterior más oscuro
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.lineWidth = hasDiscrepancy ? 4.5 : 3.5; // Líneas considerablemente más gruesas
+          ctx.stroke();
+          
+          // Luego el contorno interior con el color original
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = hasDiscrepancy ? 3.5 : 2.5;
           ctx.stroke();
           
           // Mostrar etiqueta
           if (showLabels) {
-            // Fondo de etiqueta
-            const labelPadding = 5;
+            // Etiquetas más pequeñas y adaptativas al tamaño
+            const labelPadding = 2;
             const labelX = x + labelPadding;
             const labelY = y + labelPadding;
-            const labelWidth = Math.min(adjustedWidth - (labelPadding * 2), 120);
-            const labelHeight = barcode === 'EMPTY' ? 25 : 40;
+            // Ajustar ancho de la etiqueta según el tamaño disponible
+            const maxLabelWidth = Math.min(adjustedWidth - (labelPadding * 2), 100);
             
-            // Solo mostrar etiqueta si hay suficiente espacio
-            if (labelWidth > 30 && adjustedHeight > 30) {
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            // Estimar si hay espacio suficiente para la etiqueta
+            if (maxLabelWidth > 35 && adjustedHeight > 25) {
+              // Tamaño de etiqueta basado en espacio disponible
+              const labelHeight = hasDiscrepancy ? 25 : (barcode === 'EMPTY' ? 18 : 18);
+              
+              // Background con opacidad adaptativa según tamaño
+              const bgOpacity = Math.min(0.80, 0.65 + (maxLabelWidth / 200)); // Mayor opacidad
+              ctx.fillStyle = `rgba(0, 0, 0, ${bgOpacity})`;
+              
+              // Dibujar fondo con esquinas redondeadas
               ctx.beginPath();
-              ctx.roundRect(labelX, labelY, labelWidth, labelHeight, 3);
+              ctx.roundRect(labelX, labelY, maxLabelWidth, labelHeight, 2);
               ctx.fill();
               
-              // Texto
+              // Texto en tamaño adaptativo
+              const fontSize = Math.max(9, Math.min(12, maxLabelWidth / 10));
+              ctx.font = `bold ${fontSize}px Arial`; // Texto en negrita para mayor visibilidad
               ctx.fillStyle = 'white';
-              ctx.font = '12px Arial';
               
               if (hasDiscrepancy) {
                 const disc = discrepancyMap.get(key);
                 
-                if (labelWidth > 100) {
-                  // Si hay espacio suficiente, mostrar ambos valores
-                  ctx.fillText(`Esp: ${disc.esperado.substring(0, 10)}`, labelX + 5, labelY + 18);
-                  ctx.fillText(`Enc: ${disc.encontrado.substring(0, 10)}`, labelX + 5, labelY + 38);
+                // Truncar textos largos
+                const truncateText = (text, maxChars) => {
+                  if (!text) return "N/A";
+                  return text.length > maxChars ? text.substring(0, maxChars) + '...' : text;
+                };
+                
+                const maxChars = Math.floor(maxLabelWidth / (fontSize * 0.6));
+                
+                if (maxLabelWidth > 60) {
+                  // Mostrar esperado y encontrado
+                  ctx.fillText(`Esp: ${truncateText(disc.esperado, maxChars)}`, labelX + 2, labelY + fontSize + 1);
+                  ctx.fillText(`Enc: ${truncateText(disc.encontrado, maxChars)}`, labelX + 2, labelY + (fontSize * 2) + 2);
                 } else {
-                  // Espacio limitado, mostrar solo uno
-                  ctx.fillText(disc.encontrado === 'vacío' ? '❌ Falta' : '⚠️ Incorrecto', labelX + 5, labelY + 18);
+                  // Texto compacto para etiquetas pequeñas
+                  ctx.fillText(disc.encontrado === 'vacío' ? '❌ Falta' : '⚠️ Error', labelX + 2, labelY + fontSize + 2);
                 }
               } else if (barcode === 'EMPTY') {
-                ctx.fillText('Vacío', labelX + 5, labelY + 18);
+                ctx.fillText('Vacío', labelX + 2, labelY + fontSize + 2);
               } else {
-                // Truncar barcode si es muy largo
-                const displayText = barcode.length > 10 ? barcode.substring(0, 10) + '...' : barcode;
-                ctx.fillText(displayText, labelX + 5, labelY + 18);
+                // Truncar código de producto
+                const displayText = barcode.length > Math.floor(maxLabelWidth / (fontSize * 0.6)) ? 
+                  barcode.substring(0, Math.floor(maxLabelWidth / (fontSize * 0.6))) + '...' : barcode;
+                ctx.fillText(displayText, labelX + 2, labelY + fontSize + 2);
               }
-            } else if (labelWidth > 20) {
-              // Para etiquetas muy pequeñas, mostrar solo un indicador
-              const miniLabelX = x + adjustedWidth/2 - 10;
-              const miniLabelY = y + adjustedHeight/2 - 10;
+            } else if (labelX > 15) {
+              // Para etiquetas muy pequeñas, mostrar solo indicador de estado
+              const miniSize = Math.min(10, Math.max(5, adjustedWidth / 6)); // Ligeramente más grande
+              const miniX = x + adjustedWidth / 2;
+              const miniY = y + adjustedHeight / 2;
               
-              ctx.fillStyle = hasDiscrepancy ? 'rgba(255, 0, 0, 0.7)' : 
-                             (barcode === 'EMPTY' ? 'rgba(150, 150, 150, 0.7)' : 'rgba(0, 150, 0, 0.7)');
               ctx.beginPath();
-              ctx.arc(miniLabelX + 10, miniLabelY + 10, 10, 0, Math.PI * 2);
+              ctx.arc(miniX, miniY, miniSize, 0, Math.PI * 2);
+              
+              // Color según estado con mayor contraste
+              if (hasDiscrepancy) {
+                ctx.fillStyle = 'rgba(227, 6, 19, 0.95)'; // Rojo OXXO para error
+              } else if (barcode === 'EMPTY') {
+                ctx.fillStyle = 'rgba(150, 150, 150, 0.85)'; // Gris para vacío
+              } else {
+                ctx.fillStyle = 'rgba(0, 150, 0, 0.85)'; // Verde para correcto
+              }
+              
               ctx.fill();
               
-              ctx.fillStyle = 'white';
-              ctx.font = '12px Arial';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              
-              if (hasDiscrepancy) {
-                ctx.fillText('!', miniLabelX + 10, miniLabelY + 10);
-              } else if (barcode === 'EMPTY') {
-                ctx.fillText('V', miniLabelX + 10, miniLabelY + 10);
-              } else {
-                ctx.fillText('✓', miniLabelX + 10, miniLabelY + 10);
-              }
-              
-              // Restablecer alineación de texto
-              ctx.textAlign = 'start';
-              ctx.textBaseline = 'alphabetic';
+              // Añadir borde para mayor visibilidad
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
             }
           }
         });
@@ -1403,7 +1703,16 @@ const OCR = () => {
         apiKey: modelConfig.apiKey,
         emptyThresholdMultiplier: modelConfig.emptyThresholdMultiplier,
         shelfThreshold: modelConfig.shelfThreshold,
-        confidence: modelConfig.confidence || 0.35 // Umbral de confianza
+        confidence: modelConfig.confidence || 0.35, // Umbral de confianza
+        enableProductSizing: true, // Habilitar ajuste de tamaño por tipo de producto
+        productAspectRatios: {
+          // Definir proporciones aproximadas para tipos de productos comunes
+          default: { width: 1, height: 1.8 }, // Proporción por defecto para productos
+          bottle: { width: 1, height: 3 },    // Botellas (más altas que anchas)
+          box: { width: 1.5, height: 2 },     // Cajas
+          can: { width: 1, height: 1.2 },     // Latas
+          packet: { width: 1.3, height: 1.7 } // Paquetes
+        }
       };
       
       const processResult = await processImageAndCompare(
@@ -2318,6 +2627,275 @@ const OCR = () => {
     );
   }, [result, productNames]);
   
+  // Add a new function to save the analysis to Firestore
+  const saveAnalysisToFirestore = async () => {
+    if (!result || !canvasRef.current) {
+      setError('No hay análisis para guardar.');
+      return null;
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveSuccess(false);
+      setError(null);
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Es necesario iniciar sesión para guardar el análisis.');
+      }
+
+      // Upload the visualization image to Storage
+      const canvas = canvasRef.current;
+      const imageDataUrl = canvas.toDataURL('image/png');
+      
+      // Create a reference with a unique name
+      const imageFileName = `planogram_analysis_${Date.now()}_${Math.random().toString(36).substring(2, 10)}.png`;
+      const imageRef = ref(storage, `analysis_images/${imageFileName}`);
+      
+      // Upload the image
+      await uploadString(imageRef, imageDataUrl, 'data_url');
+      
+      // Get the download URL
+      const imageUrl = await getDownloadURL(imageRef);
+      setSavedImageUrl(imageUrl);
+      
+      // Firestore-safe converter - handles nested arrays and complex structures
+      const makeFirestoreSafe = (data) => {
+        // For null/undefined values
+        if (data === null || data === undefined) {
+          return null;
+        }
+        
+        // For arrays
+        if (Array.isArray(data)) {
+          // Convert arrays to objects with numeric string keys
+          const obj = {};
+          data.forEach((item, index) => {
+            obj[`item_${index}`] = makeFirestoreSafe(item);
+          });
+          return obj;
+        }
+        
+        // For objects (not arrays, not null)
+        if (typeof data === 'object') {
+          const safeObj = {};
+          for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+              safeObj[key] = makeFirestoreSafe(data[key]);
+            }
+          }
+          return safeObj;
+        }
+        
+        // For primitives (string, number, boolean)
+        return data;
+      };
+      
+      // Calculate the exact similarity percentage with full precision
+      // Prioritize the most accurate measure in this order: advancedAnalysis, comparacion.similitud, calculated from matches
+      const getSimilarityPercentage = () => {
+        // First try advanced analysis which has the most accurate algorithm
+        if (result.advancedAnalysis && typeof result.advancedAnalysis.similarityScore === 'number') {
+          return Number(result.advancedAnalysis.similarityScore);
+        }
+        
+        // Next try similarity from comparacion
+        if (result.comparacion && typeof result.comparacion.similitud === 'number') {
+          return Number(result.comparacion.similitud);
+        }
+        
+        // If no existing calculation, derive from coincidencias/total
+        if (result.comparacion && typeof result.comparacion.coincidencias === 'number' && 
+            typeof result.comparacion.total === 'number' && result.comparacion.total > 0) {
+          return (result.comparacion.coincidencias / result.comparacion.total) * 100;
+        }
+        
+        // Last resort - count products explicitly
+        const expectedTotal = result.expectedArray ? result.expectedArray.flat().filter(p => p !== 'EMPTY' && p !== 'vacío').length : 0;
+        if (expectedTotal > 0) {
+          const discrepanciesCount = result.comparacion?.discrepancias?.length || 0;
+          return Math.max(0, Math.min(100, ((expectedTotal - discrepanciesCount) / expectedTotal) * 100));
+        }
+        
+        return 0; // Default if no valid calculation is possible
+      };
+      
+      // Calculate statistics with precision
+      const exactSimilarityPercentage = getSimilarityPercentage();
+      
+      // Safe basic stats (no nested arrays)
+      const estadisticas = {
+        totalEstantes: result.barcodesArray?.length || 0,
+        totalProductos: result.barcodesArray ? result.barcodesArray.flat().filter(p => p !== 'EMPTY').length : 0,
+        espaciosVacios: result.barcodesArray ? result.barcodesArray.flat().filter(p => p === 'EMPTY').length : 0,
+        discrepancias: result.comparacion?.discrepancias?.length || 0,
+        similitud: exactSimilarityPercentage,
+        // Add additional precision fields
+        similitudExacta: exactSimilarityPercentage,
+        similitudFormatted: exactSimilarityPercentage.toFixed(2) + '%',
+        precision: result.advancedAnalysis?.precision || 0,
+      };
+      
+      console.log('Guardando análisis con similitud exacta de:', exactSimilarityPercentage);
+      
+      // Convert model info to a safe format
+      let modelosUtilizados = {};
+      if (result.metadata?.combinacion && result.metadata.estadisticas?.modelosInfo) {
+        result.metadata.estadisticas.modelosInfo.forEach((model, index) => {
+          modelosUtilizados[`modelo_${index}`] = model.modelName || `Modelo ${index + 1}`;
+        });
+      } else {
+        modelosUtilizados = { "modelo_0": result.metadata?.modelName || 'Modelo estándar' };
+      }
+      
+      // Generate unique identifier for user identification without leaking info
+      const userIdentifier = currentUser.uid + '_' + Date.now();
+      
+      // Simplify the complete data structure to avoid nested arrays
+      const simplifiedData = {
+        // Essential data (safe)
+        tiendaId: selectedTienda,
+        tiendaNombre: tiendas.find(t => t.id === selectedTienda)?.nombre || '',
+        planogramaId: selectedPlanograma,
+        planogramaNombre: planogramas.find(p => p.id === selectedPlanograma)?.nombre || '',
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email || 'Usuario',
+        userIdentifier: userIdentifier,
+        createdAt: serverTimestamp(),
+        imageUrl: imageUrl,
+        fechaAnalisis: new Date().toISOString(),
+        
+        // Statistics summary with precise similarity value
+        ...estadisticas,
+        modelosUtilizados,
+        
+        // Additional data for search/filter capabilities
+        seccion: result.metadata?.seccion || '',
+        configuracion: {
+          highPrecisionMode: highPrecisionMode,
+          useMultipleModels: useMultipleModels,
+          modelCount: useMultipleModels ? modelConfigs.filter(m => m.enabled).length : 1
+        },
+        
+        // Process complex properties individually to ensure Firestore compatibility
+        discrepanciasCount: result.comparacion?.discrepancias?.length || 0,
+        discrepancias: makeFirestoreSafe(result.comparacion?.discrepancias || []),
+        barcodesArray: makeFirestoreSafe(result.barcodesArray || []),
+        expectedArray: makeFirestoreSafe(result.expectedArray || []),
+      };
+      
+      // Save to Firestore
+      const docRef = await addDoc(collection(db, "analysis"), simplifiedData);
+      
+      console.log('Análisis guardado con ID:', docRef.id);
+      setSavedAnalysisId(docRef.id);
+      setSaveSuccess(true);
+      
+      return docRef.id;
+    } catch (error) {
+      console.error('Error al guardar el análisis:', error);
+      setError(`Error al guardar el análisis: ${error.message}`);
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  // Add this after the results-actions div in the results container
+  // Add this after your renderArrayComparison code, inside the return statement
+  const renderSaveSection = useMemo(() => {
+    return (
+      <div className="save-analysis-section">
+        <h3>
+          <span className="material-icons">save</span>
+          Guardar Análisis
+        </h3>
+        
+        <div className="save-description">
+          <p>Guarde este análisis en la base de datos para futuras consultas o para compartir con su equipo.</p>
+        </div>
+        
+        <button 
+          className={`save-button ${isSaving ? 'saving' : ''} ${saveSuccess ? 'success' : ''}`}
+          onClick={saveAnalysisToFirestore}
+          disabled={isSaving || !result || saveSuccess}
+        >
+          {isSaving ? (
+            <>
+              <span className="spinner"></span>
+              Guardando...
+            </>
+          ) : saveSuccess ? (
+            <>
+              <span className="material-icons">check_circle</span>
+              Guardado Exitosamente
+            </>
+          ) : (
+            <>
+              <span className="material-icons">save</span>
+              Guardar Análisis
+            </>
+          )}
+        </button>
+        
+        {saveSuccess && savedAnalysisId && (
+          <div className="save-success-info">
+            <p>ID de análisis: <strong>{savedAnalysisId}</strong></p>
+            <p>Puede acceder a este análisis desde el panel de estadísticas.</p>
+            
+            {savedImageUrl && (
+              <div className="saved-image-preview">
+                <p>Imagen guardada:</p>
+                <img src={savedImageUrl} alt="Vista previa análisis guardado" className="saved-image-thumbnail" />
+              </div>
+            )}
+          </div>
+        )}
+        
+        {error && error.includes('guardar el análisis') && (
+          <div className="save-error">
+            <span className="material-icons">error</span>
+            <p>{error}</p>
+          </div>
+        )}
+      </div>
+    );
+  }, [isSaving, saveSuccess, savedAnalysisId, savedImageUrl, result, error]);
+  
+  // Determinar el tipo de producto basado en sus proporciones y características visuales
+  const determineProductType = (prediction, productCode) => {
+    // Obtener dimensiones y relación de aspecto
+    const width = prediction.x2 - prediction.x1;
+    const height = prediction.y2 - prediction.y1;
+    const aspectRatio = height / width;
+    
+    // Clasificar producto según su código si está disponible
+    if (productCode) {
+      // Patrones comunes en códigos de productos
+      if (/agua|bonafont|ciel|bebida|refres|coca/i.test(productCode)) {
+        return aspectRatio > 2 ? 'bottle' : 'can';
+      }
+      if (/leche|polvo|formula|nan/i.test(productCode)) {
+        return 'can';
+      }
+      if (/pañal|huggies|pampers|kleenex|papel/i.test(productCode)) {
+        return 'box';
+      }
+      if (/galleta|chocolate|snack/i.test(productCode)) {
+        return 'packet';
+      }
+    }
+    
+    // Si no hay código o no se pudo clasificar, usar la relación de aspecto
+    if (aspectRatio > 2.5) return 'bottle';     // Muy alto y delgado (botellas)
+    if (aspectRatio > 1.7) return 'box';        // Alto (cajas)
+    if (aspectRatio < 0.7) return 'flat';       // Ancho y bajo
+    if (aspectRatio < 1.1) return 'can';        // Casi cuadrado (latas)
+    
+    // Si no se puede determinar con certeza
+    return 'default';
+  };
+  
   return (
     <div className="ocr-container">
       <h2>Detección OCR de Planogramas</h2>
@@ -2827,6 +3405,9 @@ const OCR = () => {
               </button>
             </div>
           )}
+          
+          {/* Add the save section before the closing div */}
+          {renderSaveSection}
         </div>
       )}
     </div>

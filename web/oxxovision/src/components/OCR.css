@@ -1368,4 +1368,131 @@ input:checked + .slider:before {
   .recommendation-item {
     padding: 8px 10px;
   }
+}
+
+/* Save Analysis Section Styles */
+.save-analysis-section {
+  margin-top: 40px;
+  padding: 25px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.save-analysis-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.save-analysis-section h3 .material-icons {
+  color: #7b1fa2;
+}
+
+.save-description {
+  margin-bottom: 20px;
+  color: #555;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.save-button {
+  background-color: #7b1fa2;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: #6a1b9a;
+  transform: translateY(-2px);
+}
+
+.save-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.save-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.save-button.saving {
+  background-color: #9c27b0;
+  cursor: wait;
+}
+
+.save-button.success {
+  background-color: #4caf50;
+}
+
+.save-success-info {
+  margin-top: 10px;
+  padding: 15px;
+  background-color: #e8f5e9;
+  border-radius: 6px;
+  border-left: 4px solid #4caf50;
+}
+
+.save-success-info p {
+  margin: 5px 0;
+  color: #2e7d32;
+}
+
+.saved-image-preview {
+  margin-top: 15px;
+}
+
+.saved-image-preview p {
+  margin-bottom: 10px;
+}
+
+.saved-image-thumbnail {
+  max-width: 100%;
+  height: auto;
+  max-height: 300px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.save-error {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-top: 10px;
+  border-left: 4px solid #c62828;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.save-error .material-icons {
+  color: #c62828;
+  font-size: 24px;
+}
+
+@media (max-width: 768px) {
+  .save-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .saved-image-thumbnail {
+    max-height: 200px;
+  }
 } 

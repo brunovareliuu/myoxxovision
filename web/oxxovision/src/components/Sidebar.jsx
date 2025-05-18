@@ -52,7 +52,13 @@ const Sidebar = ({ userData }) => {
     {
       title: 'Verificar Planogramas',
       icon: 'document_scanner',
-      path: '/ocr',
+      path: '/oxxo-vision',
+      visible: true
+    },
+    {
+      title: 'Estadísticas',
+      icon: 'analytics',
+      path: '/statistics',
       visible: true
     },
     {

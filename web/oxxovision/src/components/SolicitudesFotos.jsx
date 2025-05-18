@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './SolicitudesFotos.css';
-import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Función simple para formatear fecha
@@ -24,6 +24,15 @@ const formatearFecha = (fechaISOString) => {
   }
 };
 
+// Función para registrar cuando se recibe una foto
+const logFotoRecibida = (solicitud) => {
+  console.log(`📸 Nueva foto recibida - ${new Date().toLocaleString()}`);
+  console.log(`  • Solicitud: ${solicitud.titulo}`);
+  console.log(`  • Planograma: ${solicitud.planogramaNombre}`);
+  console.log(`  • Completada por: ${solicitud.completadaPor}`);
+  console.log(`  • URL: ${solicitud.fotoUrl.substring(0, 50)}...`);
+};
+
 const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,17 +44,110 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     descripcion: ''
   });
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
-  const [solicitudParaResponder, setSolicitudParaResponder] = useState(null);
-  const [enviando, setEnviando] = useState(false);
   const [planogramas, setPlanogramas] = useState([]);
   const [cargandoPlanogramas, setCargandoPlanogramas] = useState(false);
+  const [mostrarImagenCompleta, setMostrarImagenCompleta] = useState(null);
 
-  // Cargar solicitudes al montar el componente
+  // Cargar solicitudes y planogramas al montar el componente
   useEffect(() => {
-    cargarSolicitudes();
+    const unsubscribe = configurarSolicitudesListener();
     cargarPlanogramas();
-  }, [tiendaId]);
+    
+    // Limpieza al desmontar
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [tiendaId, esAdmin]);
+
+  // Función para configurar el listener de solicitudes
+  const configurarSolicitudesListener = () => {
+    try {
+      setLoading(true);
+      const db = getFirestore();
+      let solicitudesRef;
+      
+      if (esAdmin) {
+        // Administradores ven todas las solicitudes de la tienda
+        solicitudesRef = collection(db, `tiendas/${tiendaId}/solicitudes`);
+      } else {
+        // Empleados ven solicitudes asignadas a ellos o sin asignar
+        solicitudesRef = query(
+          collection(db, `tiendas/${tiendaId}/solicitudes`),
+          where('completada', '==', false)
+        );
+      }
+      
+      // Configurar un listener en lugar de una carga única
+      return onSnapshot(solicitudesRef, (snapshot) => {
+        const solicitudesData = [];
+        const cambios = {
+          agregadas: [],
+          modificadas: [],
+          eliminadas: []
+        };
+        
+        snapshot.docChanges().forEach((change) => {
+          const solicitud = {
+            id: change.doc.id,
+            ...change.doc.data()
+          };
+          
+          if (change.type === 'added') {
+            cambios.agregadas.push(solicitud);
+          } 
+          else if (change.type === 'modified') {
+            cambios.modificadas.push(solicitud);
+            
+            // Verificar si se ha añadido una foto (completada es true y tiene fotoUrl)
+            if (solicitud.completada && solicitud.fotoUrl) {
+              const solicitudAnterior = solicitudes.find(s => s.id === solicitud.id);
+              // Si es una nueva foto o la foto ha cambiado
+              if (!solicitudAnterior?.fotoUrl || solicitudAnterior.fotoUrl !== solicitud.fotoUrl) {
+                logFotoRecibida(solicitud);
+              }
+            }
+          } 
+          else if (change.type === 'removed') {
+            cambios.eliminadas.push(solicitud);
+          }
+        });
+        
+        // Registrar cambios para debugging
+        if (cambios.agregadas.length > 0) {
+          console.log(`📩 ${cambios.agregadas.length} solicitudes nuevas recibidas`);
+        }
+        if (cambios.modificadas.length > 0) {
+          console.log(`🔄 ${cambios.modificadas.length} solicitudes actualizadas`);
+        }
+        
+        // Construir la lista actualizada
+        snapshot.forEach(doc => {
+          solicitudesData.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        // Ordenar por fecha límite (las más próximas primero)
+        solicitudesData.sort((a, b) => {
+          if (!a.fechaLimite) return 1;
+          if (!b.fechaLimite) return -1;
+          return new Date(a.fechaLimite) - new Date(b.fechaLimite);
+        });
+        
+        setSolicitudes(solicitudesData);
+        setLoading(false);
+      }, (error) => {
+        console.error("Error en el listener de solicitudes:", error);
+        setLoading(false);
+      });
+      
+    } catch (error) {
+      console.error("Error al configurar listener de solicitudes:", error);
+      setLoading(false);
+      return null;
+    }
+  };
 
   // Función para cargar planogramas de la tienda
   const cargarPlanogramas = async () => {
@@ -78,49 +180,6 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     }
   };
 
-  // Función para cargar solicitudes de la tienda desde Firestore
-  const cargarSolicitudes = async () => {
-    try {
-      setLoading(true);
-      const db = getFirestore();
-      let solicitudesRef;
-      
-      if (esAdmin) {
-        // Administradores ven todas las solicitudes de la tienda
-        solicitudesRef = collection(db, `tiendas/${tiendaId}/solicitudes`);
-      } else {
-        // Empleados ven solicitudes asignadas a ellos o sin asignar
-        solicitudesRef = query(
-          collection(db, `tiendas/${tiendaId}/solicitudes`),
-          where('completada', '==', false)
-        );
-      }
-      
-      const snapshot = await getDocs(solicitudesRef);
-      
-      const solicitudesData = [];
-      snapshot.forEach(doc => {
-        solicitudesData.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
-      // Ordenar por fecha límite (las más próximas primero)
-      solicitudesData.sort((a, b) => {
-        if (!a.fechaLimite) return 1;
-        if (!b.fechaLimite) return -1;
-        return new Date(a.fechaLimite) - new Date(b.fechaLimite);
-      });
-      
-      setSolicitudes(solicitudesData);
-    } catch (error) {
-      console.error("Error al cargar solicitudes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -139,13 +198,6 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
           planogramaNombre: planogramaSeleccionado.nombre || 'Planograma sin nombre'
         }));
       }
-    }
-  };
-
-  // Manejar selección de archivo
-  const handleFileChange = (e) => {
-    if (e.target.files[0]) {
-      setArchivoSeleccionado(e.target.files[0]);
     }
   };
 
@@ -173,7 +225,7 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
       // Guardar en Firestore
       const docRef = await addDoc(collection(db, `tiendas/${tiendaId}/solicitudes`), solicitudData);
       
-      // Limpiar formulario y recargar
+      // Limpiar formulario
       setNuevaSolicitud({
         titulo: '',
         planogramaNombre: '',
@@ -182,7 +234,8 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
         descripcion: ''
       });
       setMostrarFormulario(false);
-      cargarSolicitudes();
+      
+      // No es necesario recargar manualmente, el snapshot listener actualizará automáticamente
       
     } catch (error) {
       console.error("Error al crear solicitud:", error);
@@ -192,53 +245,15 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     }
   };
 
-  // Responder a una solicitud con foto
-  const responderSolicitud = async (e) => {
-    e.preventDefault();
-    if (!archivoSeleccionado || !solicitudParaResponder) {
-      alert("Selecciona un archivo de imagen para subir");
-      return;
-    }
-    
-    try {
-      setEnviando(true);
-      const storage = getStorage();
-      const db = getFirestore();
-      
-      // Crear referencia en Storage
-      const storageRef = ref(storage, `tiendas/${tiendaId}/solicitudes/${solicitudParaResponder.id}/${Date.now()}_${archivoSeleccionado.name}`);
-      
-      // Subir archivo
-      await uploadBytes(storageRef, archivoSeleccionado);
-      
-      // Obtener URL de descarga
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      // Actualizar documento en Firestore
-      await updateDoc(doc(db, `tiendas/${tiendaId}/solicitudes/${solicitudParaResponder.id}`), {
-        fotoUrl: downloadURL,
-        completada: true,
-        fechaCompletada: new Date(),
-        completadaPor: usuarioActual?.nombre || 'Usuario'
-      });
-      
-      // Limpiar y recargar
-      setArchivoSeleccionado(null);
-      setSolicitudParaResponder(null);
-      cargarSolicitudes();
-      
-    } catch (error) {
-      console.error("Error al responder solicitud:", error);
-      alert("Error al subir la imagen. Inténtalo de nuevo.");
-    } finally {
-      setEnviando(false);
-    }
+  // Configurar el modal para ver la imagen completa
+  const abrirImagenCompleta = (solicitud) => {
+    setMostrarImagenCompleta(solicitud);
   };
 
   return (
     <div className="solicitudes-container">
       <div className="solicitudes-header">
-        <h3>Solicitudes de Fotos de Planogramas</h3>
+        <h3>Visualización de Fotos de Planogramas</h3>
         
         {esAdmin && (
           <button 
@@ -331,42 +346,31 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
         </div>
       )}
       
-      {/* Modal para responder solicitud */}
-      {solicitudParaResponder && (
+      {/* Modal para ver imagen completa */}
+      {mostrarImagenCompleta && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <h4>Responder Solicitud</h4>
-            <p><strong>{solicitudParaResponder.titulo}</strong></p>
-            <p>Planograma: {solicitudParaResponder.planogramaNombre}</p>
-            
-            <form onSubmit={responderSolicitud} className="respuesta-form">
-              <div className="form-group">
-                <label>Seleccionar Foto:</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleFileChange}
-                  required
+          <div className="modal-content imagen-completa-modal">
+            <h4>{mostrarImagenCompleta.titulo}</h4>
+            <p>Planograma: {mostrarImagenCompleta.planogramaNombre}</p>
+            <div className="imagen-completa-contenedor">
+              <img 
+                src={mostrarImagenCompleta.fotoUrl} 
+                alt="Foto del planograma" 
                 />
               </div>
-              
+            <div className="detalles-imagen">
+              <p>Subida por: {mostrarImagenCompleta.completadaPor || 'No disponible'}</p>
+              <p>Fecha: {formatearFecha(mostrarImagenCompleta.fechaCompletada)}</p>
+            </div>
               <div className="form-actions">
                 <button 
                   type="button" 
                   className="cancel-btn"
-                  onClick={() => setSolicitudParaResponder(null)}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="submit-btn"
-                  disabled={enviando}
-                >
-                  {enviando ? 'Subiendo...' : 'Subir Foto'}
+                onClick={() => setMostrarImagenCompleta(null)}
+              >
+                Cerrar
                 </button>
               </div>
-            </form>
           </div>
         </div>
       )}
@@ -376,7 +380,7 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
         <div className="loading">Cargando solicitudes...</div>
       ) : solicitudes.length === 0 ? (
         <div className="no-solicitudes">
-          <p>No hay solicitudes de fotos pendientes</p>
+          <p>No hay solicitudes de fotos disponibles</p>
         </div>
       ) : (
         <div className="solicitudes-list">
@@ -406,15 +410,6 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
                   <p className="solicitud-descripcion">{solicitud.descripcion}</p>
                 )}
                 
-                {!solicitud.completada && !esAdmin && (
-                  <button 
-                    className="responder-btn"
-                    onClick={() => setSolicitudParaResponder(solicitud)}
-                  >
-                    Subir Foto
-                  </button>
-                )}
-                
                 {solicitud.completada && (
                   <div className="solicitud-status">
                     <i className="material-icons">check_circle</i>
@@ -424,10 +419,26 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
               </div>
               
               {solicitud.fotoUrl && (
-                <div className="solicitud-imagen">
-                  <a href={solicitud.fotoUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={solicitud.fotoUrl} alt="Foto del planograma" />
-                  </a>
+                <div className="solicitud-imagen" onClick={() => abrirImagenCompleta(solicitud)}>
+                  <img 
+                    src={solicitud.fotoUrl} 
+                    alt="Foto del planograma" 
+                    className={solicitud._pendiente ? 'imagen-pendiente' : ''}
+                  />
+                  {solicitud._pendiente && (
+                    <div className="estado-pendiente">
+                      <span className="material-icons">hourglass_top</span>
+                      <span>Cargando...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Mostrar placeholder si no hay foto */}
+              {!solicitud.fotoUrl && (
+                <div className="solicitud-imagen-placeholder">
+                  <span className="material-icons">image_not_supported</span>
+                  <span>Sin imagen</span>
                 </div>
               )}
             </div>
