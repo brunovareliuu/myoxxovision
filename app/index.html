@@ -1,0 +1,935 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../instalacion/">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>MyOxxo Mobile App - Oxxo Vision Project Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="red" data-md-color-accent="orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#myoxxo-mobile-app" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Oxxo Vision Project Documentation" class="md-header__button md-logo" aria-label="Oxxo Vision Project Documentation" data-md-component="logo">
+      
+  <img src="../assets/images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Oxxo Vision Project Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MyOxxo Mobile App
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../arquitectura/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitectura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../vision-artificial/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Tecnología de Visión Artificial
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../instalacion/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Guía de Instalación
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  MyOxxo Mobile App
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Oxxo Vision Project Documentation" class="md-nav__button md-logo" aria-label="Oxxo Vision Project Documentation" data-md-component="logo">
+      
+  <img src="../assets/images/logo.png" alt="logo">
+
+    </a>
+    Oxxo Vision Project Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitectura/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Arquitectura
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vision-artificial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tecnología de Visión Artificial
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../instalacion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Guía de Instalación
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    MyOxxo Mobile App
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    MyOxxo Mobile App
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#descripcion-general" class="md-nav__link">
+    <span class="md-ellipsis">
+      Descripción General
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tecnologias-utilizadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tecnologías Utilizadas
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tecnologías Utilizadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frontend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backend-y-servicios" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend y Servicios
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vision-artificial" class="md-nav__link">
+    <span class="md-ellipsis">
+      Visión Artificial
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#herramientas-de-desarrollo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Herramientas de Desarrollo
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flujo-de-usuario-user-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flujo de Usuario (User Flow)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pantallas-principales" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pantallas Principales
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pantallas Principales">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#login-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      Login Screen
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dashboard-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dashboard Screen
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-list-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      Task List Screen
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-detail-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      Task Detail Screen
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vision-analysis-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vision Analysis Screen
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modales-de-resultados" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modales de Resultados
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caracteristicas-especiales" class="md-nav__link">
+    <span class="md-ellipsis">
+      Características Especiales
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Características Especiales">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deteccion-de-productos" class="md-nav__link">
+    <span class="md-ellipsis">
+      Detección de Productos
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparacion-con-planograma" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparación con Planograma
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enfoque-en-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enfoque en UX
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arquitectura-de-datos" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arquitectura de Datos
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Arquitectura de Datos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#colecciones-en-firestore" class="md-nav__link">
+    <span class="md-ellipsis">
+      Colecciones en Firestore
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#impacto-en-el-negocio" class="md-nav__link">
+    <span class="md-ellipsis">
+      Impacto en el Negocio
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="myoxxo-mobile-app">MyOxxo Mobile App</h1>
+<h2 id="descripcion-general">Descripción General</h2>
+<p>MyOxxo Mobile App es una solución móvil diseñada para optimizar la gestión de tiendas OXXO, enfocándose en la verificación de planogramas mediante visión artificial. La aplicación permite a los empleados verificar la correcta colocación de productos en estanterías, comparando la disposición real con el planograma ideal establecido por la empresa.</p>
+<h2 id="tecnologias-utilizadas">Tecnologías Utilizadas</h2>
+<h3 id="frontend">Frontend</h3>
+<ul>
+<li><strong>React Native</strong>: Framework para desarrollo de aplicaciones móviles multiplataforma</li>
+<li><strong>Expo</strong>: Plataforma para simplificar el desarrollo con React Native</li>
+<li><strong>React Navigation</strong>: Para la navegación entre pantallas</li>
+<li><strong>React Native Vector Icons</strong>: Biblioteca de iconos</li>
+</ul>
+<h3 id="backend-y-servicios">Backend y Servicios</h3>
+<ul>
+<li><strong>Firebase</strong>:</li>
+<li>Firestore: Base de datos NoSQL para almacenamiento de datos</li>
+<li>Firebase Storage: Almacenamiento de imágenes y evidencias</li>
+<li>Firebase Authentication: Gestión de usuarios y autenticación</li>
+</ul>
+<h3 id="vision-artificial">Visión Artificial</h3>
+<ul>
+<li><strong>Roboflow API</strong>: Servicio de detección de objetos y análisis de imágenes</li>
+<li><strong>Algoritmos de procesamiento de imágenes</strong>: Desarrollados específicamente para identificación de productos en estanterías</li>
+</ul>
+<h3 id="herramientas-de-desarrollo">Herramientas de Desarrollo</h3>
+<ul>
+<li><strong>Git</strong>: Control de versiones</li>
+<li><strong>JavaScript/ES6+</strong>: Lenguaje de programación principal</li>
+<li><strong>Expo Image Manipulator</strong>: Para procesamiento y compresión de imágenes</li>
+</ul>
+<h2 id="flujo-de-usuario-user-flow">Flujo de Usuario (User Flow)</h2>
+<ol>
+<li><strong>Inicio de Sesión</strong>:</li>
+<li>El usuario inicia sesión con sus credenciales de empleado</li>
+<li>
+<p>Autenticación mediante Firebase Auth</p>
+</li>
+<li>
+<p><strong>Pantalla de Inicio (Dashboard)</strong>:</p>
+</li>
+<li>Visualización de tareas pendientes</li>
+<li>
+<p>Filtrado por tienda, prioridad y fecha</p>
+</li>
+<li>
+<p><strong>Lista de Tareas</strong>:</p>
+</li>
+<li>Visualización de tareas asignadas al usuario</li>
+<li>Filtros por estado (pendientes, completadas)</li>
+<li>
+<p>Ordenamiento por prioridad y fecha límite</p>
+</li>
+<li>
+<p><strong>Detalle de Tarea</strong>:</p>
+</li>
+<li>Visualización de información detallada de una tarea específica</li>
+<li>Acceso al planograma asociado</li>
+<li>
+<p>Opción para iniciar la tarea de verificación</p>
+</li>
+<li>
+<p><strong>Verificación de Planograma</strong>:</p>
+</li>
+<li>Captura de imagen mediante cámara o selección desde galería</li>
+<li>Subida de imagen a Firebase Storage</li>
+<li>
+<p>Procesamiento mediante Roboflow API para detección de productos</p>
+</li>
+<li>
+<p><strong>Visualización de Resultados</strong>:</p>
+</li>
+<li>Visualización de productos detectados por charola</li>
+<li>Identificación de discrepancias entre el planograma ideal y la disposición real</li>
+<li>
+<p>Recomendaciones para corregir la disposición de productos</p>
+</li>
+<li>
+<p><strong>Finalización de Tarea</strong>:</p>
+</li>
+<li>Marcado de tarea como completada</li>
+<li>Registro de evidencia en la base de datos</li>
+</ol>
+<h2 id="pantallas-principales">Pantallas Principales</h2>
+<h3 id="login-screen">Login Screen</h3>
+<ul>
+<li><strong>Funcionalidad</strong>: Permite a los usuarios autenticarse en la aplicación.</li>
+<li><strong>Retos técnicos</strong>:</li>
+<li>Implementación de validaciones de seguridad</li>
+<li>Integración con Firebase Authentication</li>
+<li>Manejo de estados de autenticación (login, logout, recordar sesión)</li>
+</ul>
+<h3 id="dashboard-screen">Dashboard Screen</h3>
+<ul>
+<li><strong>Funcionalidad</strong>: Muestra un resumen de las tareas pendientes y completadas.</li>
+<li><strong>Retos técnicos</strong>:</li>
+<li>Diseño de interfaz intuitiva con múltiples métricas</li>
+<li>Implementación de gráficos para visualización de datos</li>
+<li>Optimización de consultas a Firestore para rendimiento</li>
+</ul>
+<h3 id="task-list-screen">Task List Screen</h3>
+<ul>
+<li><strong>Funcionalidad</strong>: Presenta una lista de tareas asignadas al usuario.</li>
+<li><strong>Retos técnicos</strong>:</li>
+<li>Implementación de filtrado y ordenamiento eficiente</li>
+<li>Diseño de lista con carga lazy (paginación)</li>
+<li>Sincronización de datos en tiempo real con Firestore</li>
+</ul>
+<h3 id="task-detail-screen">Task Detail Screen</h3>
+<ul>
+<li><strong>Funcionalidad</strong>: Muestra información detallada de una tarea, incluyendo el planograma asociado y las opciones para completarla.</li>
+<li><strong>Retos técnicos</strong>:</li>
+<li>Visualización interactiva del planograma con múltiples niveles (charolas)</li>
+<li>Implementación de navegación entre detalles de productos</li>
+<li>Integración con la cámara y galería para captura de evidencias</li>
+<li>Gestión de permisos del dispositivo (cámara, almacenamiento)</li>
+</ul>
+<h3 id="vision-analysis-screen">Vision Analysis Screen</h3>
+<ul>
+<li><strong>Funcionalidad</strong>: Procesamiento de imágenes para detectar productos y comparar con el planograma ideal.</li>
+<li><strong>Retos técnicos</strong>:</li>
+<li>Integración con Roboflow API para análisis de imágenes</li>
+<li>Optimización del envío de imágenes (compresión vs. URL)</li>
+<li>Desarrollo de algoritmos para organizar productos por charola</li>
+<li>Cálculo de discrepancias y recomendaciones de movimientos</li>
+</ul>
+<h3 id="modales-de-resultados">Modales de Resultados</h3>
+<ul>
+<li><strong>Funcionalidad</strong>: Presentación de resultados del análisis visual.</li>
+<li><strong>Retos técnicos</strong>:</li>
+<li>Diseño de interfaz clara para mostrar productos detectados por charola</li>
+<li>Visualización intuitiva de discrepancias y recomendaciones</li>
+<li>Flujo de navegación coherente entre modales</li>
+<li>Recuperación de información detallada de productos desde Firestore</li>
+</ul>
+<h2 id="caracteristicas-especiales">Características Especiales</h2>
+<h3 id="deteccion-de-productos">Detección de Productos</h3>
+<p>La aplicación utiliza un modelo de visión artificial entrenado específicamente para reconocer productos en estanterías de OXXO. El sistema puede:
+- Identificar productos individuales en una imagen
+- Determinar su ubicación en la estantería
+- Organizar los productos por niveles (charolas)
+- Detectar espacios vacíos</p>
+<h3 id="comparacion-con-planograma">Comparación con Planograma</h3>
+<p>El algoritmo compara inteligentemente la disposición real con el planograma ideal:
+- Identifica productos mal ubicados
+- Detecta productos faltantes
+- Reconoce productos que no deberían estar en la estantería
+- Genera recomendaciones específicas de acciones a realizar</p>
+<h3 id="enfoque-en-ux">Enfoque en UX</h3>
+<p>La aplicación prioriza la experiencia de usuario:
+- Flujo intuitivo para completar tareas
+- Retroalimentación visual clara
+- Modales informativos con acciones claras
+- Optimización para uso rápido en tienda</p>
+<h2 id="arquitectura-de-datos">Arquitectura de Datos</h2>
+<h3 id="colecciones-en-firestore">Colecciones en Firestore</h3>
+<ul>
+<li><strong>usuarios</strong>: Información de empleados</li>
+<li><strong>tiendas</strong>: Detalles de las tiendas OXXO</li>
+<li><strong>planogramas</strong>: Disposición ideal de productos por estantería</li>
+<li><strong>tareas</strong>: Asignaciones de verificación de planogramas</li>
+<li><strong>productos</strong>: Catálogo de productos con detalles</li>
+<li><strong>evidencias</strong>: Registros de verificaciones con imágenes y resultados</li>
+</ul>
+<h2 id="impacto-en-el-negocio">Impacto en el Negocio</h2>
+<p>La aplicación representa un avance significativo en la operación de tiendas OXXO, permitiendo una verificación más eficiente y precisa de la disposición de productos, lo que impacta directamente en:</p>
+<ul>
+<li><strong>Mejora en la experiencia del cliente</strong>: Productos correctamente ubicados y fáciles de encontrar</li>
+<li><strong>Incremento en ventas</strong>: Disposición óptima siguiendo estrategias de mercadeo</li>
+<li><strong>Reducción de tiempo operativo</strong>: Verificación rápida y precisa de planogramas</li>
+<li><strong>Datos analíticos valiosos</strong>: Información sobre cumplimiento de planogramas a nivel cadena</li>
+<li><strong>Estandarización de tiendas</strong>: Aseguramiento de imagen de marca consistente </li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/femsa/oxxo-vision" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/oxxo_oficial" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
