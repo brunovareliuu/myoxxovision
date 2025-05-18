@@ -657,114 +657,170 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
     }
   };
 
-  // Función super simplificada para evaluar una solicitud con OCR
+  // Función para descargar la imagen de la solicitud
+  const descargarImagen = async (solicitud) => {
+    if (!solicitud.fotoUrl) {
+      alert('No hay imagen disponible para descargar.');
+      return;
+    }
+    
+    try {
+      console.log('📥 Iniciando descarga de imagen');
+      
+      // Obtener URL de la imagen (con preferencia por la ruta de Storage)
+      let urlParaDescargar;
+      
+      if (solicitud.fotoDatos && solicitud.fotoDatos.rutaStorage) {
+        // Usar la ruta de Storage para obtener una URL fresca
+        try {
+          const storage = getStorage();
+          const storageRef = ref(storage, solicitud.fotoDatos.rutaStorage);
+          urlParaDescargar = await getDownloadURL(storageRef);
+          console.log('✅ URL de descarga obtenida desde Storage');
+        } catch (error) {
+          console.error('❌ Error al obtener URL desde Storage:', error);
+          urlParaDescargar = solicitud.fotoUrl;
+        }
+      } else {
+        // Usar la URL directa
+        urlParaDescargar = solicitud.fotoUrl;
+      }
+      
+      // Añadir timestamp para evitar caché
+      urlParaDescargar = urlParaDescargar.includes('?') ? 
+        `${urlParaDescargar}&t=${Date.now()}` : 
+        `${urlParaDescargar}?t=${Date.now()}`;
+      
+      // Crear un enlace temporal para la descarga
+      const nombreArchivo = solicitud.fotoDatos?.nombreArchivo || `imagen_planograma_${solicitud.id}.jpg`;
+      
+      // Método 1: Abrir en nueva pestaña (funciona mejor para la mayoría de dispositivos)
+      window.open(urlParaDescargar, '_blank');
+      
+      // Método 2: Usar fetch para descargar (alternativa)
+      setTimeout(async () => {
+        try {
+          // Verificar si el usuario inició descarga con el primer método
+          const respuesta = await fetch(urlParaDescargar);
+          if (!respuesta.ok) throw new Error('Error al obtener la imagen');
+          
+          const blob = await respuesta.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = nombreArchivo;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          console.log('✅ Descarga iniciada correctamente');
+        } catch (e) {
+          console.error('Error en descarga alternativa:', e);
+          // No mostrar error al usuario porque ya se abrió en otra pestaña
+        }
+      }, 1000); // Esperar 1 segundo antes de intentar el segundo método
+      
+    } catch (error) {
+      console.error('❌ Error al descargar imagen:', error);
+      alert('Error al descargar la imagen. Por favor, inténtalo de nuevo.');
+    }
+  };
+  
+  // Función simplificada para ir a la pantalla de evaluación
+  const irAEvaluacion = (solicitud) => {
+    if (!solicitud.planogramaId) {
+      alert('No se puede evaluar esta solicitud porque no tiene planograma asociado.');
+      return;
+    }
+    
+    console.log('🔍 Navegando a pantalla de evaluación manual:', solicitud.id);
+    
+    // Navegar directamente a OCR con parámetros mínimos
+    navigate('/ocr', { 
+      state: {
+        tiendaId: tiendaId,
+        planogramaId: solicitud.planogramaId,
+        planogramaNombre: solicitud.planogramaNombre,
+        solicitudId: solicitud.id,
+        solicitudTitulo: solicitud.titulo,
+        seleccionManual: true, // Indicar que se debe seleccionar manualmente
+        timestamp: Date.now()
+      },
+      replace: false
+    });
+  };
+  
+  // Función optimizada para evaluar una solicitud con OCR (mantener por compatibilidad)
   const evaluarSolicitud = (solicitud) => {
     if (!solicitud.fotoUrl || !solicitud.planogramaId) {
       alert('No se puede evaluar esta solicitud porque no tiene imagen o planograma asociado.');
       return;
     }
     
-    // Mensaje para el usuario
-    alert('Preparando imagen para análisis... Espera un momento.');
+    console.log('🔍 Iniciando evaluación de solicitud:', solicitud.id);
     
     try {
-      // Paso 1: Crear una imagen temporal para descargar la imagen
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+      // Usar la URL directamente sin intentar convertir a base64
+      const timestamp = Date.now();
       
-      // Paso 2: Configurar el evento onload para procesar la imagen cuando se cargue
-      img.onload = () => {
-        try {
-          // Paso 3: Crear un canvas para convertir la imagen a base64
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          
-          // Paso 4: Dibujar la imagen en el canvas
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          
-          // Paso 5: Convertir a base64
-          const base64 = canvas.toDataURL('image/jpeg', 0.9);
-          
-          // Paso 6: Navegar a OCR con la imagen en base64
-          const ocrParams = {
-            tiendaId: tiendaId,
-            planogramaId: solicitud.planogramaId,
-            planogramaNombre: solicitud.planogramaNombre,
-            // Enviar la imagen como base64
-            fotoUrl: base64,
-            solicitudId: solicitud.id,
-            solicitudTitulo: solicitud.titulo,
-            esBase64: true,
-            cargarDirecto: false,
-            timestamp: Date.now()
-          };
-          
-          console.log('✅ Imagen convertida a base64 exitosamente');
-          
-          // Navegar a OCR con los parámetros
-          navigate('/ocr', { state: ocrParams, replace: false });
-        } catch (error) {
-          console.error('Error al convertir imagen:', error);
-          intentarMetodoAlternativo();
-        }
-      };
-      
-      // Paso 7: Configurar el evento onerror para manejar errores de carga
-      img.onerror = () => {
-        console.error('Error al cargar la imagen original');
-        intentarMetodoAlternativo();
-      };
-      
-      // Función para intentar método alternativo si falla el principal
-      const intentarMetodoAlternativo = () => {
-        try {
-          // Intentar obteniendo una URL fresca de Firebase (si aplica)
-          if (solicitud.fotoUrl.includes('firebasestorage.googleapis.com')) {
-            // Extraer la ruta del storage
-            const pathMatch = solicitud.fotoUrl.match(/\/o\/([^?]+)/);
-            if (pathMatch && pathMatch[1]) {
-              const decodedPath = decodeURIComponent(pathMatch[1]);
-              console.log('Intentando método Firebase directo');
-              
-              // Obtener Storage y crear referencia
-              const storage = getStorage();
-              const storageRef = ref(storage, decodedPath);
-              
-              // Obtener URL de descarga fresca
-              getDownloadURL(storageRef)
-                .then(freshUrl => {
-                  console.log('URL fresca obtenida:', freshUrl);
-                  navegarDirecto(freshUrl);
-                })
-                .catch(error => {
-                  console.error('Error al obtener URL fresca:', error);
-                  navegarDirecto(solicitud.fotoUrl);
-                });
-            } else {
-              navegarDirecto(solicitud.fotoUrl);
-            }
-          } else {
-            navegarDirecto(solicitud.fotoUrl);
-          }
-        } catch (error) {
-          console.error('Error en método alternativo:', error);
-          navegarDirecto(solicitud.fotoUrl);
-        }
-      };
-      
-      // Función para navegar directamente con la URL
-      const navegarDirecto = (url) => {
-        console.log('Navegando con URL directa');
+      // Si tiene datos de ruta de storage, usarlos directamente (más eficiente)
+      if (solicitud.fotoDatos && solicitud.fotoDatos.rutaStorage) {
+        console.log('📂 Usando referencia directa a Storage:', solicitud.fotoDatos.rutaStorage);
         
-        // Agregar timestamp para evitar caché
-        const timestamp = Date.now();
-        const urlConTimestamp = url.includes('?') ? 
-          `${url}&t=${timestamp}` : 
-          `${url}?t=${timestamp}`;
+        // Obtener la URL directamente de la ruta de Storage
+        const storage = getStorage();
+        const storageRef = ref(storage, solicitud.fotoDatos.rutaStorage);
         
-        // Navegar a OCR con la URL
+        // Mostrar mensaje de procesamiento
+        alert('Preparando imagen para análisis... Espera un momento.');
+        
+        // Obtener URL de descarga fresca para evitar problemas de caché
+        getDownloadURL(storageRef)
+          .then(freshUrl => {
+            console.log('✅ URL fresca obtenida directamente de Storage');
+            
+            // Navegar a OCR con los parámetros
+            navigate('/ocr', { 
+              state: {
+                tiendaId: tiendaId,
+                planogramaId: solicitud.planogramaId,
+                planogramaNombre: solicitud.planogramaNombre,
+                fotoUrl: `${freshUrl}?t=${timestamp}`,
+                solicitudId: solicitud.id,
+                solicitudTitulo: solicitud.titulo,
+                cargarDirecto: true,
+                esReferencia: true,
+                rutaStorage: solicitud.fotoDatos.rutaStorage,
+                timestamp: timestamp
+              },
+              replace: false
+            });
+          })
+          .catch(error => {
+            console.error('❌ Error al obtener URL fresca de Storage:', error);
+            usarUrlDirecta();
+          });
+      } else {
+        // Si no hay datos de ruta de storage, usar la URL directamente
+        console.log('🔗 Usando URL directa de imagen (no hay referencia a Storage)');
+        usarUrlDirecta();
+      }
+      
+      // Función para usar la URL directamente
+      function usarUrlDirecta() {
+        // Mostrar mensaje
+        alert('Preparando imagen para análisis... Espera un momento.');
+        
+        // Añadir timestamp para evitar caché
+        const urlConTimestamp = solicitud.fotoUrl.includes('?') ? 
+          `${solicitud.fotoUrl}&t=${timestamp}` : 
+          `${solicitud.fotoUrl}?t=${timestamp}`;
+          
+        console.log('🔗 Navegando con URL directa:', urlConTimestamp.substring(0, 100) + '...');
+        
+        // Navegar a OCR con la URL directa
         navigate('/ocr', { 
           state: {
             tiendaId: tiendaId,
@@ -778,35 +834,17 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
           },
           replace: false
         });
-      };
-      
-      // Paso 8: Cargar la imagen con un parámetro para evitar caché
-      const timestamp = Date.now();
-      const urlConTimestamp = solicitud.fotoUrl.includes('?') ? 
-        `${solicitud.fotoUrl}&t=${timestamp}` : 
-        `${solicitud.fotoUrl}?t=${timestamp}`;
-      
-      console.log('Cargando imagen:', urlConTimestamp);
-      img.src = urlConTimestamp;
-      
-      // Establecer un tiempo máximo de espera (15 segundos)
-      setTimeout(() => {
-        if (!img.complete) {
-          console.log('Timeout de carga de imagen, intentando método alternativo');
-          img.src = ''; // Detener la carga
-          intentarMetodoAlternativo();
-        }
-      }, 15000);
+      }
     } catch (error) {
-      console.error('Error general:', error);
+      console.error('❌ Error al procesar la solicitud:', error);
       
-      // En caso de cualquier error, intentar con URL directa
-      const timestamp = Date.now();
+      // Último recurso: usar la URL directamente
+      alert('Hubo un problema al preparar la imagen. Intentando método alternativo...');
+      
       const urlFallback = solicitud.fotoUrl.includes('?') ?
-        `${solicitud.fotoUrl}&t=${timestamp}` :
-        `${solicitud.fotoUrl}?t=${timestamp}`;
+        `${solicitud.fotoUrl}&t=${Date.now()}` :
+        `${solicitud.fotoUrl}?t=${Date.now()}`;
       
-      // Navegar con la URL directamente como último recurso
       navigate('/ocr', { 
         state: {
           tiendaId: tiendaId,
@@ -815,8 +853,9 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
           fotoUrl: urlFallback,
           solicitudId: solicitud.id,
           solicitudTitulo: solicitud.titulo,
-          timestamp: timestamp
-        }, 
+          esRecuperacion: true,
+          timestamp: Date.now()
+        },
         replace: false
       });
     }
@@ -1022,15 +1061,24 @@ const SolicitudesFotos = ({ tiendaId, esAdmin, usuarioActual }) => {
                     </button>
                   )}
                   
-                  {/* Botón para evaluar solicitudes completadas con foto */}
+                  {/* Botones para descargar y evaluar solicitudes completadas con foto */}
                   {solicitud.completada && solicitud.fotoUrl && solicitud.planogramaId && (
-                    <button 
-                      className="evaluar-btn"
-                      onClick={() => evaluarSolicitud(solicitud)}
-                    >
-                      <i className="material-icons">analytics</i>
-                      Evaluar
-                    </button>
+                    <div className="solicitud-botones-accion">
+                      <button 
+                        className="descargar-btn"
+                        onClick={() => descargarImagen(solicitud)}
+                      >
+                        <i className="material-icons">download</i>
+                        Descargar
+                      </button>
+                      <button 
+                        className="evaluar-btn"
+                        onClick={() => irAEvaluacion(solicitud)}
+                      >
+                        <i className="material-icons">analytics</i>
+                        Evaluar
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
